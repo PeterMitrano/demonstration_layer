@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package>
+  <name>demonstration_layer</name>
+  <version>0.0.0</version>
+  <description>The demonstration_layer package</description>
+
+  <maintainer email="mitranopeter@gmail.com">peter</maintainer>
+
+  <license>WTFPL</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>costmap_2d</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>roscpp</build_depend>
+  <run_depend>costmap_2d</run_depend>
+  <run_depend>dynamic_reconfigure</run_depend>
+  <run_depend>roscpp</run_depend>
+
+
+  <export>
+    <costmap_2d plugin="${prefix}/demonstration_layer_plugin.xml" />
+  </export>
+</package>

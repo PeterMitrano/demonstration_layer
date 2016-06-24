@@ -1,0 +1,5 @@
+<library path="lib/libdemonstration_layer">
+  <class type="demonstration_layer_namespace::DemonstrationLayer" base_class_type="costmap_2d::Layer">
+    <description>Layer for lowering cost around demonstrated trajectories</description>
+  </class>
+</library>
