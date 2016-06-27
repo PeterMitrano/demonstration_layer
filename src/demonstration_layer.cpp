@@ -1,6 +1,8 @@
 #include <demonstration_layer/demonstration_layer.h>
 #include <pluginlib/class_list_macros.h>
 
+#include <algorithm>
+
 PLUGINLIB_EXPORT_CLASS(demonstration_layer::DemonstrationLayer, costmap_2d::Layer)
 
 using costmap_2d::LETHAL_OBSTACLE;
@@ -46,10 +48,13 @@ void DemonstrationLayer::demoPathCallback(const nav_msgs::Path& msg)
   for (auto pose_stamped : msg.poses)
   {
     DemoPoseStamped demo_pose(layered_costmap_->getCostmap(), pose_stamped);
+    const bool contains = path_set_.find(demo_pose) != path_set_.end();
+    if (!contains)
+    {
+      ROS_INFO("adding new point in map frame (%d,%d)", demo_pose.getMapX(), demo_pose.getMapY());
+    }
     path_set_.insert(demo_pose);
   }
-
-  ROS_INFO("demo point set size: %lu", path_set_.size());
 }
 
 void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
@@ -58,17 +63,17 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
   if (!enabled_)
     return;
 
-  // double mark_x = robot_x + cos(robot_yaw), mark_y = robot_y + sin(robot_yaw);
-  // unsigned int mx;
-  // unsigned int my;
-  // if(worldToMap(mark_x, mark_y, mx, my)){
-  // setCost(mx, my, LETHAL_OBSTACLE);
-  //}
+  //go through all the points and create a bounding box
 
-  //*min_x = std::min(*min_x, mark_x);
-  //*min_y = std::min(*min_y, mark_y);
-  //*max_x = std::max(*max_x, mark_x);
-  //*max_y = std::max(*max_y, mark_y);
+  for (auto demo_pose : path_set_)
+  {
+    double world_pose_x = demo_pose.pose_stamped.pose.position.x;
+    double world_pose_y = demo_pose.pose_stamped.pose.position.y;
+    *min_x = std::min(*min_x, world_pose_x);
+    *min_y = std::min(*min_y, world_pose_y);
+    *max_x = std::max(*max_x, world_pose_x);
+    *max_y = std::max(*max_y, world_pose_y);
+  }
 }
 
 void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
