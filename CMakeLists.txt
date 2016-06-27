@@ -18,7 +18,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(demonstration_layer src/demonstration_layer.cpp)
+add_library(demonstration_layer src/demonstration_layer_2.cpp)
 target_link_libraries(demonstration_layer
    ${catkin_LIBRARIES}
 )
