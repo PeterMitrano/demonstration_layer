@@ -4,6 +4,7 @@ project(demonstration_layer)
 find_package(catkin REQUIRED COMPONENTS
   costmap_2d
   dynamic_reconfigure
+  nav_msgs
   roscpp
 )
 
