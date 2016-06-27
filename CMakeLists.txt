@@ -7,6 +7,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
 )
 
+set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES demonstration_layer
@@ -18,7 +20,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(demonstration_layer src/demonstration_layer_2.cpp)
+add_library(demonstration_layer src/demonstration_layer.cpp)
 target_link_libraries(demonstration_layer
    ${catkin_LIBRARIES}
 )

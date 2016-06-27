@@ -8,5 +8,6 @@ global_costmap:
    plugins:
      - {name: static_layer,            type: "costmap_2d::StaticLayer"}
      - {name: obstacle_layer,          type: "costmap_2d::VoxelLayer"}
+     - {name: demo_layer,          type: "demonstration_layer::DemonstrationLayer"}
      - {name: inflation_layer,         type: "costmap_2d::InflationLayer"}
 
