@@ -14,6 +14,7 @@
   <depend>dynamic_reconfigure</depend>
   <depend>nav_msgs</depend>
   <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
 
   <export>
     <costmap_2d plugin="${prefix}/demonstration_layer_plugin.xml" />

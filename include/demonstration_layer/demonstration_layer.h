@@ -8,6 +8,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
 #include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <unordered_set>
 
 namespace demonstration_layer
@@ -29,11 +30,14 @@ public:
   virtual void matchSize();
 
 private:
-  void reconfigureCB(costmap_2d::GenericPluginConfig& config, uint32_t level);
+  const static unsigned char NON_DEMO_COST_ = 0;
+  const static unsigned char DEMO_COST_ = 100;
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>* dsrv_;
   ros::Subscriber demo_path_sub_;
+  ros::Publisher demo_cost_pub_;
   std::unordered_set<DemoPoseStamped> path_set_;
 
   void demoPathCallback(const nav_msgs::Path& msg);
+  void reconfigureCB(costmap_2d::GenericPluginConfig& config, uint32_t level);
 };
 }
