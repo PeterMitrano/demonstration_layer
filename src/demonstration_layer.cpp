@@ -101,8 +101,6 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
 
   this->mapToWorld(map_width_, map_height_, *max_x, *max_y);
   this->mapToWorld(0, 0, *min_x, *min_y);
-  ROS_INFO("%f,%f %f,%f", *min_x, *min_y, *max_x, *max_y);
-
 }
 
 void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
@@ -115,9 +113,10 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
     for (int i = min_i; i < max_i; i++)
     {
       int index = getIndex(i, j);
+
       //253, 254, and 255 are reserved
       //everything else is a custom value
-      if (costmap_[index] >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+      if (master_grid.getCost(i,j) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
       {
         continue;
       }
