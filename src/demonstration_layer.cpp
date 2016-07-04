@@ -32,6 +32,8 @@ void DemonstrationLayer::onInitialize()
 void DemonstrationLayer::matchSize()
 {
   Costmap2D* master = layered_costmap_->getCostmap();
+  map_width_ = master->getSizeInCellsX();
+  map_height_ = master->getSizeInCellsY();
   resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(), master->getOriginX(),
             master->getOriginY());
 }
@@ -80,15 +82,26 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
   if (!enabled_)
     return;
 
+  //increase all free space squares by 100
+  for (unsigned int x=0; x < map_width_; x++)
+  {
+    for (unsigned int y=0; y < map_height_; y++)
+    {
+      //it seems that getCost is always initialized to zero
+      //instead of taking the cost of the grid according to lower layers
+      setCost(x, y, NON_DEMO_COST_);
+    }
+  }
+
+
   for (auto demo_pose : path_set_)
   {
-    *min_x = std::min(*min_x, demo_pose.pose_stamped.pose.position.x);
-    *min_y = std::min(*min_y, demo_pose.pose_stamped.pose.position.y);
-    *max_x = std::max(*max_x, demo_pose.pose_stamped.pose.position.x);
-    *max_y = std::max(*max_y, demo_pose.pose_stamped.pose.position.y);
-
     setCost(demo_pose.getMapX(), demo_pose.getMapY(), DEMO_COST_);
   }
+
+  this->mapToWorld(map_width_, map_height_, *max_x, *max_y);
+  this->mapToWorld(0, 0, *min_x, *min_y);
+  ROS_INFO("%f,%f %f,%f", *min_x, *min_y, *max_x, *max_y);
 
 }
 
@@ -102,6 +115,7 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
     for (int i = min_i; i < max_i; i++)
     {
       int index = getIndex(i, j);
+      //253, 254, and 255 are reserved
       //everything else is a custom value
       if (costmap_[index] >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
       {
@@ -109,7 +123,6 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
       }
 
       master_grid.setCost(i, j, costmap_[index]);
-      ROS_INFO("cost %d", costmap_[index]);
     }
   }
 

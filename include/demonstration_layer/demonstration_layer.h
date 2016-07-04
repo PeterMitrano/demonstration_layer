@@ -30,8 +30,10 @@ public:
   virtual void matchSize();
 
 private:
-  const static unsigned char NON_DEMO_COST_ = 0;
-  const static unsigned char DEMO_COST_ = 100;
+  const static unsigned char NON_DEMO_COST_ = 100;
+  const static unsigned char DEMO_COST_ = 0;
+  unsigned int map_width_;
+  unsigned int map_height_;
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>* dsrv_;
   ros::Subscriber demo_path_sub_;
   ros::Publisher demo_cost_pub_;

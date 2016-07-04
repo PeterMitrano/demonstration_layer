@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
 )
 
+set(CMAKE_BUILD_TYPE Debug)
+
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 catkin_package(
