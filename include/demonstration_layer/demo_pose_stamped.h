@@ -1,9 +1,15 @@
 #include <costmap_2d/costmap_2d.h>
 #include <geometry_msgs/PoseStamped.h>
 
+/**
+ * @class DemoPoseStamped
+ * @brief A class capable of hashing that wraps geometry_msg::PoseStamped.
+ * It can retrieve cell indeces used in costmap_2d.
+ */
 class DemoPoseStamped
 {
 public:
+
   DemoPoseStamped(costmap_2d::Costmap2D* costmap) : DemoPoseStamped(costmap, geometry_msgs::PoseStamped())
   {
   }
@@ -13,6 +19,7 @@ public:
   {
   }
 
+  /** @brief get the column cell index (map x) of the pose */
   unsigned int getMapX() const
   {
     unsigned int map_x, map_y;
@@ -20,6 +27,7 @@ public:
     return map_x;
   }
 
+  /** @brief get the row cell index (map y) of the pose */
   unsigned int getMapY() const
   {
     unsigned int map_x, map_y;

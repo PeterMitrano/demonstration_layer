@@ -20,8 +20,11 @@ void DemonstrationLayer::onInitialize()
   default_value_ = costmap_2d::NO_INFORMATION;
   matchSize();
 
-  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(private_nh);
-  dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb =
+  private_nh.param<int>("no_demo_cost", no_demo_cost_, 10);
+  private_nh.param<int>("demo_cost", demo_cost_, 0);
+
+  dsrv_ = new dynamic_reconfigure::Server<demonstration_layer::DemonstrationLayerConfig>(private_nh);
+  dynamic_reconfigure::Server<demonstration_layer::DemonstrationLayerConfig>::CallbackType cb =
       boost::bind(&DemonstrationLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
 
@@ -38,9 +41,11 @@ void DemonstrationLayer::matchSize()
             master->getOriginY());
 }
 
-void DemonstrationLayer::reconfigureCB(costmap_2d::GenericPluginConfig& config, uint32_t level)
+void DemonstrationLayer::reconfigureCB(demonstration_layer::DemonstrationLayerConfig& config, uint32_t level)
 {
   enabled_ = config.enabled;
+  no_demo_cost_ = config.no_demo_cost;
+  demo_cost_ = config.demo_cost;
 }
 
 void DemonstrationLayer::demoPathCallback(const nav_msgs::Path& msg)
@@ -89,14 +94,14 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
     {
       //it seems that getCost is always initialized to zero
       //instead of taking the cost of the grid according to lower layers
-      setCost(x, y, NON_DEMO_COST_);
+      setCost(x, y, no_demo_cost_);
     }
   }
 
 
   for (auto demo_pose : path_set_)
   {
-    setCost(demo_pose.getMapX(), demo_pose.getMapY(), DEMO_COST_);
+    setCost(demo_pose.getMapX(), demo_pose.getMapY(), demo_cost_);
   }
 
   this->mapToWorld(map_width_, map_height_, *max_x, *max_y);
