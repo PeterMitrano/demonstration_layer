@@ -33,3 +33,5 @@ add_dependencies(demonstration_layer ${PROJECT_NAME}_gencfg)
 target_link_libraries(demonstration_layer
    ${catkin_LIBRARIES}
 )
+
+add_dependencies(demonstration_layer ${PROJECT_NAME}_gencfg)
