@@ -75,11 +75,12 @@ void DemonstrationLayer::demoPathCallback(const nav_msgs::Path& msg)
 
       // if the pose already exists in the set, reset it to 0
       auto current_pose = path_set_.find(demo_pose);
-        if (current_pose != path_set_.end())
+      if (current_pose != path_set_.end())
       {
         current_pose->seenAgain();
       }
-      else {
+      else
+      {
         path_set_.insert(demo_pose);
       }
 
@@ -109,10 +110,9 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
 
   std::unordered_set<DemoPoseStamped>::const_iterator it;
   std::stringstream ss;
-  for (it = path_set_.begin() ; it != path_set_.end(); it++)
+  for (it = path_set_.begin(); it != path_set_.end(); it++)
   {
-    ss << it->getMapX() << "," << it->getMapY() << "," << it->cost
-      << "  ";
+    ss << it->getMapX() << "," << it->getMapY() << "," << it->cost << "  ";
     setCost(it->getMapX(), it->getMapY(), it->cost);
 
     // update every pose's cost, increasing by it's growth

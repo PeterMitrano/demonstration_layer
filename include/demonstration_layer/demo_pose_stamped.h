@@ -15,7 +15,8 @@ public:
     : DemoPoseStamped(costmap, geometry_msgs::PoseStamped(), growth, max_cost)
   {
   }
-  DemoPoseStamped(costmap_2d::Costmap2D* costmap, geometry_msgs::PoseStamped pose_stamped, double growth, double max_cost)
+  DemoPoseStamped(costmap_2d::Costmap2D* costmap, geometry_msgs::PoseStamped pose_stamped, double growth,
+                  double max_cost)
     : cost(0), growth_(growth), max_cost_(max_cost), costmap_(costmap), pose_stamped_(pose_stamped)
   {
   }
@@ -52,8 +53,7 @@ public:
 
     if (growth_ < 1.0)
     {
-      ROS_WARN("growth  for %i, %i was %f, which is less than 1!",
-          getMapX(), getMapY(), growth_);
+      ROS_WARN("growth  for %i, %i was %f, which is less than 1!", getMapX(), getMapY(), growth_);
     }
 
     growth_ /= 2;
