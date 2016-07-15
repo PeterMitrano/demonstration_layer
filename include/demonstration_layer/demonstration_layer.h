@@ -2,8 +2,8 @@
 
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
-#include <demonstration_layer/demo_pose_stamped.h>
 #include <demonstration_layer/DemonstrationLayerConfig.h>
+#include <demonstration_layer/demo_pose_stamped.h>
 #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
@@ -13,7 +13,6 @@
 
 namespace demonstration_layer
 {
-
 /**
  * @class DemonstrationLayer
  * @brief A costmap layer for reducing the cost of specific paths.
@@ -45,16 +44,15 @@ public:
   virtual void matchSize();
 
 private:
+  double initial_growth_;
+
   /** @brief the cost of a free cell where no demonstrated path has been */
   int no_demo_cost_;
 
-  /** @brief the cost of a cell where some demonstrated path has been */
-  int demo_cost_;
   unsigned int map_width_;
   unsigned int map_height_;
   dynamic_reconfigure::Server<demonstration_layer::DemonstrationLayerConfig>* dsrv_;
   ros::Subscriber demo_path_sub_;
-  ros::Publisher demo_cost_pub_;
   std::unordered_set<DemoPoseStamped> path_set_;
 
   void demoPathCallback(const nav_msgs::Path& msg);

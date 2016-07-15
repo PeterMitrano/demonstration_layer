@@ -3,6 +3,7 @@
 #include <pluginlib/class_list_macros.h>
 
 #include <algorithm>
+#include <sstream>
 
 PLUGINLIB_EXPORT_CLASS(demonstration_layer::DemonstrationLayer, costmap_2d::Layer)
 
@@ -21,15 +22,14 @@ void DemonstrationLayer::onInitialize()
   matchSize();
 
   private_nh.param<int>("no_demo_cost", no_demo_cost_, 10);
-  private_nh.param<int>("demo_cost", demo_cost_, 0);
+  private_nh.param<double>("initial_growth_", initial_growth_, 1.0);
 
   dsrv_ = new dynamic_reconfigure::Server<demonstration_layer::DemonstrationLayerConfig>(private_nh);
-  dynamic_reconfigure::Server<demonstration_layer::DemonstrationLayerConfig>::CallbackType cb =
-      boost::bind(&DemonstrationLayer::reconfigureCB, this, _1, _2);
+  dynamic_reconfigure::Server<demonstration_layer::DemonstrationLayerConfig>::CallbackType cb;
+  cb = boost::bind(&DemonstrationLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
 
-  demo_path_sub_ = nh.subscribe("demo_path", 10, &DemonstrationLayer::demoPathCallback, this);
-  demo_cost_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("demo_cost", false);
+  demo_path_sub_ = nh.subscribe("complete_demo_path", 10, &DemonstrationLayer::demoPathCallback, this);
 }
 
 void DemonstrationLayer::matchSize()
@@ -45,35 +45,44 @@ void DemonstrationLayer::reconfigureCB(demonstration_layer::DemonstrationLayerCo
 {
   enabled_ = config.enabled;
   no_demo_cost_ = config.no_demo_cost;
-  demo_cost_ = config.demo_cost;
+  initial_growth_ = config.initial_growth_;
 }
 
 void DemonstrationLayer::demoPathCallback(const nav_msgs::Path& msg)
 {
   ROS_INFO_ONCE("demo path recieved!");
 
-  //go through each points and trace along it to the next
-  //adding all points in between (uses ray tracing)
+  // go through each points and trace along it to the next
+  // adding all points in between (uses ray tracing)
   std::vector<geometry_msgs::PoseStamped>::size_type i = 0;
   while (i < msg.poses.size() - 1)
   {
-    DemoPoseStamped p1(this, msg.poses[i]);
-    DemoPoseStamped p2(this, msg.poses[i+1]);
+    DemoPoseStamped p1(this, msg.poses[i], initial_growth_, no_demo_cost_);
+    DemoPoseStamped p2(this, msg.poses[i + 1], initial_growth_, no_demo_cost_);
 
     LineIterator line(p1.getMapX(), p1.getMapY(), p2.getMapX(), p2.getMapY());
     while (line.isValid())
     {
       geometry_msgs::PoseStamped intermediate_pose;
-      intermediate_pose.header.frame_id = p1.pose_stamped.header.frame_id;
+      intermediate_pose.header.frame_id = p1.getFrameID();
       intermediate_pose.header.stamp = ros::Time::now();
-      double x,y;
+      double x, y;
       mapToWorld(line.getX(), line.getY(), x, y);
       intermediate_pose.pose.position.x = x;
       intermediate_pose.pose.position.y = y;
 
+      DemoPoseStamped demo_pose(this, intermediate_pose, initial_growth_, no_demo_cost_);
 
-      DemoPoseStamped demo_pose(this, intermediate_pose);
-      path_set_.insert(demo_pose);
+      // if the pose already exists in the set, reset it to 0
+      auto current_pose = path_set_.find(demo_pose);
+        if (current_pose != path_set_.end())
+      {
+        current_pose->seenAgain();
+      }
+      else {
+        path_set_.insert(demo_pose);
+      }
+
       line.advance();
     }
 
@@ -87,22 +96,30 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
   if (!enabled_)
     return;
 
-  //increase all free space squares by 100
-  for (unsigned int x=0; x < map_width_; x++)
+  // increase all free space squares to a constant
+  for (unsigned int x = 0; x < map_width_; x++)
   {
-    for (unsigned int y=0; y < map_height_; y++)
+    for (unsigned int y = 0; y < map_height_; y++)
     {
-      //it seems that getCost is always initialized to zero
-      //instead of taking the cost of the grid according to lower layers
+      // it seems that getCost is always initialized to zero
+      // instead of taking the cost of the grid according to lower layers
       setCost(x, y, no_demo_cost_);
     }
   }
 
-
-  for (auto demo_pose : path_set_)
+  std::unordered_set<DemoPoseStamped>::const_iterator it;
+  std::stringstream ss;
+  for (it = path_set_.begin() ; it != path_set_.end(); it++)
   {
-    setCost(demo_pose.getMapX(), demo_pose.getMapY(), demo_cost_);
+    ss << it->getMapX() << "," << it->getMapY() << "," << it->cost
+      << "  ";
+    setCost(it->getMapX(), it->getMapY(), it->cost);
+
+    // update every pose's cost, increasing by it's growth
+    it->update();
   }
+
+  ROS_DEBUG_STREAM(ss.str());
 
   this->mapToWorld(map_width_, map_height_, *max_x, *max_y);
   this->mapToWorld(0, 0, *min_x, *min_y);
@@ -119,9 +136,9 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
     {
       int index = getIndex(i, j);
 
-      //253, 254, and 255 are reserved
-      //everything else is a custom value
-      if (master_grid.getCost(i,j) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+      // 253, 254, and 255 are reserved
+      // everything else is a custom value
+      if (master_grid.getCost(i, j) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
       {
         continue;
       }
@@ -129,7 +146,5 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
       master_grid.setCost(i, j, costmap_[index]);
     }
   }
-
 }
-
-}  // end namespace
+}
