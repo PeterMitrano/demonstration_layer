@@ -49,10 +49,16 @@ private:
   /** @brief the cost of a free cell where no demonstrated path has been */
   int no_demo_cost_;
 
+  int bias_ = 1;
+  const double LEARNING_RATE_ = 0.1;
+
   unsigned int map_width_;
   unsigned int map_height_;
+
   dynamic_reconfigure::Server<demonstration_layer::DemonstrationLayerConfig>* dsrv_;
+
   ros::Subscriber demo_path_sub_;
+
   std::unordered_set<DemoPoseStamped> path_set_;
 
   void demoPathCallback(const nav_msgs::Path& msg);

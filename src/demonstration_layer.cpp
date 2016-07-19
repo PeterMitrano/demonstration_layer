@@ -130,20 +130,19 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
   if (!enabled_)
     return;
 
+
+  // iterate over cells in the actual plan that aren't in demo plan.
+  // we want to decrease the weights by some fraction LEARNING_RATE_ of their inputs
+
+  // iterate over cells in the demo plan that aren't in actual plan.
+  // we want to increase the weights by some fraction LEARNING_RATE_ of their inputs
+
   for (int j = min_j; j < max_j; j++)
   {
     for (int i = min_i; i < max_i; i++)
     {
-      int index = getIndex(i, j);
-
-      // 253, 254, and 255 are reserved
-      // everything else is a custom value
-      if (master_grid.getCost(i, j) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
-      {
-        continue;
-      }
-
-      master_grid.setCost(i, j, costmap_[index]);
+      int x0 = master_grid.getCost(i, j);
+      master_grid.setCost(i, j, x0);
     }
   }
 }
