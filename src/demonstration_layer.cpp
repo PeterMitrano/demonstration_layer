@@ -24,8 +24,8 @@ void DemonstrationLayer::onInitialize()
   private_nh.param<int>("macro_cell_size", macro_cell_size_, 4);
   private_nh.param<double>("learning_rate", learning_rate_, 0.1);
 
-  dsrv_ = new dynamic_reconfigure::Server<demonstration_layer::DemonstrationLayerConfig>(private_nh);
-  dynamic_reconfigure::Server<demonstration_layer::DemonstrationLayerConfig>::CallbackType cb;
+  dsrv_ = new dynamic_reconfigure::Server<DemonstrationLayerConfig>(private_nh);
+  dynamic_reconfigure::Server<DemonstrationLayerConfig>::CallbackType cb;
   cb = boost::bind(&DemonstrationLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
 
@@ -41,7 +41,7 @@ void DemonstrationLayer::matchSize()
             master->getOriginY());
 }
 
-void DemonstrationLayer::reconfigureCB(demonstration_layer::DemonstrationLayerConfig& config, uint32_t level)
+void DemonstrationLayer::reconfigureCB(DemonstrationLayerConfig& config, uint32_t level)
 {
   enabled_ = config.enabled;
   learning_rate_ = config.learning_rate;
@@ -55,9 +55,23 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
     return;
 }
 
-void DemonstrationLayer::demoCallback(const recovery_supervisor::Demo& msg)
+void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::Demo& msg)
 {
   ROS_INFO_ONCE("Demos are being recieved");
+  // when recieve a message, it's time to update the weights.
+}
+
+void DemonstrationLayer::macroCellExists(int x, int y, MacroCell* output)
+{
+  auto macrocell_it = macrocell_map_.find(std::pair<int,int>(x,y));
+  if (macrocell_it != macrocell_map_.end())
+  {
+    output = &macrocell_it->second;
+  }
+  else
+  {
+    output = nullptr;
+  }
 }
 
 void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
@@ -75,8 +89,15 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
   {
     for (int i = min_i; i < max_i; i++)
     {
-      int x0 = master_grid.getCost(i, j);
-      master_grid.setCost(i, j, x0);
+      int cost = master_grid.getCost(i, j);
+
+      MacroCell *macrocell;
+      macroCellExists(i, j, macrocell);
+      if (macrocell != nullptr){
+        cost += macrocell->costGivenFeatures(latest_feature_values_);
+      }
+
+      master_grid.setCost(i, j, cost);
     }
   }
 }

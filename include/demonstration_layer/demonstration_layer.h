@@ -7,7 +7,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
-#include <recovery_supervisor/Demo.h>
+#include <recovery_supervisor_msgs/Demo.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <map>
@@ -73,7 +73,8 @@ private:
 /** @class MacroCell
  * @brief A macro cell is just a group of cells. Each macrocell has a set of
  * corresponding weights there is one weight for each bucket, and several
- * buckets for every feature.
+ * buckets for every feature. We only create a macro cell for areas that recieve
+ * demonstration, so it's not a continuous grid.
  */
 class MacroCell
 {
@@ -82,6 +83,10 @@ public:
   int x;     // starting x in map frame
   int y;     // starting y in map frame
   int size;  // width and height in number of cells
+
+  /** @brief computes the linear combination of weights
+   * and values for features of a given state */
+  double costGivenFeatures(std::vector<double> feature_values);
 
 private:
   std::vector<Feature> features_;
@@ -124,11 +129,19 @@ private:
   unsigned int map_width_;
   unsigned int map_height_;
 
-  dynamic_reconfigure::Server<demonstration_layer::DemonstrationLayerConfig>* dsrv_;
+  dynamic_reconfigure::Server<DemonstrationLayerConfig>* dsrv_;
 
   ros::Subscriber demo_sub_;
+  std::vector<double> latest_feature_values_;
 
-  void demoCallback(const recovery_supervisor::Demo& msg);
+  // container for macrocells. When we get a demo, we need to find or create
+  // the macrocells for various poses. So since we only ever lookup macrocells,
+  // and only ever by their x/y, we can use a map
+  std::map<std::pair<int, int>, MacroCell> macrocell_map_;
+
+  void macroCellExists(int x, int y, MacroCell* output);
+
+  void demoCallback(const recovery_supervisor_msgs::Demo& msg);
 
   void reconfigureCB(demonstration_layer::DemonstrationLayerConfig& config, uint32_t level);
 };
