@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   costmap_2d
   dynamic_reconfigure
   nav_msgs
+  recovery_supervisor_msgs
   roscpp
 )
 
@@ -17,7 +18,7 @@ set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES demonstration_layer
-  CATKIN_DEPENDS costmap_2d dynamic_reconfigure roscpp
+  CATKIN_DEPENDS costmap_2d dynamic_reconfigure recovery_supervisor_msgs roscpp
 )
 
 include_directories(
@@ -35,3 +36,4 @@ target_link_libraries(demonstration_layer
 )
 
 add_dependencies(demonstration_layer ${PROJECT_NAME}_gencfg)
+add_dependencies(demonstration_layer ${catkin_EXPORTED_TARGETS})

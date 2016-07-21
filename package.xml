@@ -13,7 +13,7 @@
   <depend>costmap_2d</depend>
   <depend>dynamic_reconfigure</depend>
   <depend>nav_msgs</depend>
-  <depend>recovery_supervisor</depend>
+  <depend>recovery_supervisor_msgs</depend>
   <depend>roscpp</depend>
   <depend>sensor_msgs</depend>
 
