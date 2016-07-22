@@ -9,6 +9,9 @@ PLUGINLIB_EXPORT_CLASS(demonstration_layer::DemonstrationLayer, costmap_2d::Laye
 
 namespace demonstration_layer
 {
+
+double DemonstrationLayer::learning_rate_ = 0.1;
+
 DemonstrationLayer::DemonstrationLayer() : new_demonstration_(false)
 {
 }
@@ -115,7 +118,7 @@ void DemonstrationLayer::macroCellExists(int x, int y, MacroCell* output)
 }
 
 void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
-    recovery_supervisor_msgs::SimpleFloatArray feature_vector, bool increase)
+                                           recovery_supervisor_msgs::SimpleFloatArray feature_vector, bool increase)
 {
   // iterate over cells in the odom path that aren't in demo path.
   // we want to increase the weights by some fraction LEARNING_RATE_ of their inputs
@@ -136,8 +139,8 @@ void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Cost
       pair_t pair = pair_t(key_t(macrocell_x, macrocell_y), new_macrocell);
       macrocell_map_.insert(pair);
 
-      ROS_INFO("Inserting new macro cell of size %i,(%i,%i) -> (%i,%i).",
-          macro_cell_size_, mapx, mapy, macrocell_x, macrocell_y);
+      ROS_INFO("Inserting new macro cell of size %i,(%i,%i) -> (%i,%i).", macro_cell_size_, mapx, mapy, macrocell_x,
+               macrocell_y);
     }
 
     macrocell->updateWeights(increase, underlying_map_cost, feature_vector);

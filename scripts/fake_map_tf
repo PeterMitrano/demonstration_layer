@@ -1,0 +1,37 @@
+#!/usr/bin/python
+
+import rospy
+from geometry_msgs.msg import PoseWithCovarianceStamped
+import tf
+
+
+class FakeMapTF:
+
+    robot_pos_tuple = (0, 0, 0)
+    robot_q_tuple = (0, 0, 0, 0)
+
+    def __init__(self):
+        self.br = tf.TransformBroadcaster()
+        rospy.init_node("fake_map_tf")
+
+        sub = rospy.Subscriber("/initialpose", PoseWithCovarianceStamped, self.clickedPoseCallback,
+                queue_size = 10)
+
+        r = rospy.Rate(1)
+        while (not rospy.is_shutdown()):
+            r.sleep()
+
+            self.br.sendTransform(self.robot_pos_tuple,
+                    self.robot_q_tuple,
+                    rospy.Time.now(),
+                    "base_link",
+                    "map")
+
+
+    def clickedPoseCallback(self, msg):
+        self.robot_pos_tuple = (msg.pose.pose.position.x, msg.pose.pose.position.y, 0)
+        robot_q = msg.pose.pose.orientation
+        self.robot_q_tuple = (robot_q.x, robot_q.y, robot_q.z, robot_q.w)
+
+if __name__ == "__main__":
+    fmtf = FakeMapTF()
