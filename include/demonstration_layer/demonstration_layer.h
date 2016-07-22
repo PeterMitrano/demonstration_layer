@@ -92,7 +92,8 @@ private:
 class MacroCell
 {
 public:
-  MacroCell(unsigned int x, unsigned int y, unsigned int size) : x_(x), y_(y), size_(size)
+  MacroCell(unsigned int x, unsigned int y, unsigned int size, unsigned int number_of_features)
+    : x_(x), y_(y), size_(size), number_of_features_(number_of_features)
   {
   }
   /** @brief computes the linear combination of weights
@@ -100,28 +101,30 @@ public:
    */
   int costGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::SimpleFloatArray feature_values)
   {
+    // TODO: calculate cost accounting for weights
+    // remember we also have to return an int from 0 to 128,
+    // so I think we need some kind of normalizing.
     return underlying_map_cost;
   }
 
   void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::SimpleFloatArray feature_values)
   {
     // the +1 accounts for the underlying map feature which isn't part of the message.
-    if (feature_values.data.size() + 1 != features_.size())
+    if (feature_values.data.size() != number_of_features_)
     {
-      ROS_ERROR("MacroCell has %lu features, but feature value message only has %lu",
-          features_.size(), (feature_values.data.size() + 1));
+      ROS_ERROR("MacroCell is looking for %i features, but feature value message only has %lu", number_of_features_,
+                (feature_values.data.size()));
       return;
     }
 
-    // first handle updating weight of map cost
-    //features_[0].updateWeightForValue(underlying_map_cost, 0);
+    // TODO: actually handle updating weights
   }
 
 private:
   unsigned int x_;     // starting x in map frame
   unsigned int y_;     // starting y in map frame
   unsigned int size_;  // width and height in number of cells
-  std::vector<Feature> features_;
+  unsigned int number_of_features_;
 };
 
 /**
@@ -158,6 +161,7 @@ public:
 private:
   bool new_demonstration_;
   unsigned int macro_cell_size_;
+  unsigned int number_of_features_;
 
   mutable std::mutex update_mutex_;
 
@@ -178,10 +182,10 @@ private:
   // the macrocells for various poses. So since we only ever lookup macrocells,
   // and only ever by their x/y, we can use a map
   typedef std::pair<int, int> key_t;
-  typedef std::pair<key_t, MacroCell> pair_t;
-  std::map<key_t, MacroCell> macrocell_map_;
+  typedef std::pair<key_t, MacroCell*> pair_t;
+  std::map<key_t, MacroCell*> macrocell_map_;
 
-  void macroCellExists(int x, int y, MacroCell* output);
+  void macroCellExists(int x, int y, MacroCell** output);
 
   void demoCallback(const recovery_supervisor_msgs::Demo& msg);
   void reconfigureCB(demonstration_layer::DemonstrationLayerConfig& config, uint32_t level);
@@ -189,6 +193,6 @@ private:
 
   /** @brief updates the weights for all the macrocells along a path, given a set of feature values */
   void updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
-      recovery_supervisor_msgs::SimpleFloatArray feature_vector, bool increase);
+                         recovery_supervisor_msgs::SimpleFloatArray feature_vector, bool increase);
 };
 }

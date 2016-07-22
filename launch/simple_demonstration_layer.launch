@@ -1,0 +1,13 @@
+<launch>
+
+  <node pkg="map_server" type="map_server" name="map_server" args="$(find turtlebot_stage)/maps/maze.yaml"/>
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find demonstration_layer)/rviz/simple_demonstration_layer.rviz"/>
+  <node pkg="demonstration_layer" type="fake_map_tf" name="fake_map_tf"/>
+  <node pkg="recovery_supervisor" type="points_to_path" name="points_to_path"/>
+  <node pkg="joy" type="joy_node" name="joy"/>
+
+  <!--<node pkg="costmap_2d" type="costmap_2d_node" name="global_costmap" output="screen">-->
+    <!--<rosparam file="$(find demonstration_layer)/param/global_costmap_params.yaml" command="load"/>-->
+  <!--</node>-->
+
+</launch>

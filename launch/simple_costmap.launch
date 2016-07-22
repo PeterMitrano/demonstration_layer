@@ -1,0 +1,5 @@
+<launch>
+  <node launch-prefix="gdb --args" pkg="costmap_2d" type="costmap_2d_node" name="global_costmap" output="screen">
+    <rosparam file="$(find demonstration_layer)/param/global_costmap_params.yaml" command="load"/>
+  </node>
+</launch>
