@@ -29,8 +29,18 @@ namespace demonstration_layer
 class Feature
 {
 public:
+  /** @brief initializes all weights to zero */
   Feature(double min, double max, int bucket_count) : min_(min), max_(max), bucket_count_(bucket_count)
   {
+    // initialize the first weight to 1 because that's the map cost
+    // the rest start as 0
+    auto it = bucket_to_weight_map_.begin();
+    it->second = 1;
+    it++;
+    for (; it != bucket_to_weight_map_.end(); it++)
+    {
+      it->second = 0;
+    }
   }
 
   double weightForValue(double feature_value)
@@ -82,19 +92,35 @@ private:
 class MacroCell
 {
 public:
-  MacroCell();
-  int x;     // starting x in map frame
-  int y;     // starting y in map frame
-  int size;  // width and height in number of cells
-
+  MacroCell(unsigned int x, unsigned int y, unsigned int size) : x_(x), y_(y), size_(size)
+  {
+  }
   /** @brief computes the linear combination of weights
    * and values for features of a given state
    */
-  double costGivenFeatures(recovery_supervisor_msgs::SimpleFloatArray feature_values);
+  int costGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::SimpleFloatArray feature_values)
+  {
+    return underlying_map_cost;
+  }
 
-  void updateWeights(bool increase, recovery_supervisor_msgs::SimpleFloatArray feature_values);
+  void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::SimpleFloatArray feature_values)
+  {
+    // the +1 accounts for the underlying map feature which isn't part of the message.
+    if (feature_values.data.size() + 1 != features_.size())
+    {
+      ROS_ERROR("MacroCell has %lu features, but feature value message only has %lu",
+          features_.size(), (feature_values.data.size() + 1));
+      return;
+    }
+
+    // first handle updating weight of map cost
+    //features_[0].updateWeightForValue(underlying_map_cost, 0);
+  }
 
 private:
+  unsigned int x_;     // starting x in map frame
+  unsigned int y_;     // starting y in map frame
+  unsigned int size_;  // width and height in number of cells
   std::vector<Feature> features_;
 };
 
@@ -106,6 +132,7 @@ private:
 class DemonstrationLayer : public costmap_2d::Layer, public costmap_2d::Costmap2D
 {
 public:
+  static double learning_rate_;
   DemonstrationLayer();
 
   virtual void onInitialize();
@@ -129,8 +156,10 @@ public:
   virtual void matchSize();
 
 private:
-  double learning_rate_;
-  int macro_cell_size_;
+  bool new_demonstration_;
+  unsigned int macro_cell_size_;
+
+  mutable std::mutex update_mutex_;
 
   unsigned int map_width_;
   unsigned int map_height_;
@@ -138,18 +167,28 @@ private:
   dynamic_reconfigure::Server<DemonstrationLayerConfig>* dsrv_;
 
   ros::Subscriber demo_sub_;
-  mutable std::mutex update_mutex_;
+
+  /** @brief recieves feature vectors representing the current state */
+  ros::Subscriber state_feature_sub_;
+
   recovery_supervisor_msgs::SimpleFloatArray latest_feature_values_;
+  recovery_supervisor_msgs::Demo latest_demo_;
 
   // container for macrocells. When we get a demo, we need to find or create
   // the macrocells for various poses. So since we only ever lookup macrocells,
   // and only ever by their x/y, we can use a map
-  std::map<std::pair<int, int>, MacroCell> macrocell_map_;
+  typedef std::pair<int, int> key_t;
+  typedef std::pair<key_t, MacroCell> pair_t;
+  std::map<key_t, MacroCell> macrocell_map_;
 
   void macroCellExists(int x, int y, MacroCell* output);
 
   void demoCallback(const recovery_supervisor_msgs::Demo& msg);
-
   void reconfigureCB(demonstration_layer::DemonstrationLayerConfig& config, uint32_t level);
+  void stateFeatureCallback(const recovery_supervisor_msgs::SimpleFloatArray& msg);
+
+  /** @brief updates the weights for all the macrocells along a path, given a set of feature values */
+  void updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
+      recovery_supervisor_msgs::SimpleFloatArray feature_vector, bool increase);
 };
 }
