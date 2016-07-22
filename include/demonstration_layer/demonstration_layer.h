@@ -8,9 +8,12 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
 #include <recovery_supervisor_msgs/Demo.h>
+#include <recovery_supervisor_msgs/SimpleFloatArray.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <boost/thread/shared_mutex.hpp>
 #include <map>
+#include <mutex>
 
 namespace demonstration_layer
 {
@@ -85,8 +88,11 @@ public:
   int size;  // width and height in number of cells
 
   /** @brief computes the linear combination of weights
-   * and values for features of a given state */
-  double costGivenFeatures(std::vector<double> feature_values);
+   * and values for features of a given state
+   */
+  double costGivenFeatures(recovery_supervisor_msgs::SimpleFloatArray feature_values);
+
+  void updateWeights(bool increase, recovery_supervisor_msgs::SimpleFloatArray feature_values);
 
 private:
   std::vector<Feature> features_;
@@ -132,7 +138,8 @@ private:
   dynamic_reconfigure::Server<DemonstrationLayerConfig>* dsrv_;
 
   ros::Subscriber demo_sub_;
-  std::vector<double> latest_feature_values_;
+  mutable std::mutex update_mutex_;
+  recovery_supervisor_msgs::SimpleFloatArray latest_feature_values_;
 
   // container for macrocells. When we get a demo, we need to find or create
   // the macrocells for various poses. So since we only ever lookup macrocells,

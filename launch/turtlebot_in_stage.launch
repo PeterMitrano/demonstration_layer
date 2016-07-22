@@ -58,7 +58,7 @@
   </node>
 
   <!--  ************** Navigation  ***************  -->
-  <include file="$(find demonstration_layer)/launch/includes/move_base.launch.xml"/>
+  <include file="$(find demonstration_layer)/launch/move_base.launch"/>
 
   <!--  ****** Maps *****  -->
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">

@@ -59,6 +59,47 @@ void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::Demo& msg)
 {
   ROS_INFO_ONCE("Demos are being recieved");
   // when recieve a message, it's time to update the weights.
+  // we need to worry about race conditions with updating weights
+  update_mutex_.lock();
+
+  // iterate over cells in the odom path that aren't in demo path.
+  // we want to increase the weights by some fraction LEARNING_RATE_ of their inputs
+  for (auto pose : msg.odom_path.poses)
+  {
+    MacroCell *macrocell = nullptr;
+    unsigned int mapx, mapy;
+    worldToMap(pose.pose.position.x, pose.pose.position.y, mapx, mapy);
+
+    macroCellExists(mapx, mapy, macrocell);
+    if (macrocell != nullptr)
+    {
+      for (auto feature_vector : msg.feature_values)
+      {
+        macrocell->updateWeights(true, feature_vector);
+      }
+    }
+  }
+
+  // iterate over cells in the demo path that aren't in odom path.
+  // we want to decrease the weights by some fraction LEARNING_RATE_ of their inputs
+  for (auto pose : msg.demo_path.poses)
+  {
+    MacroCell *macrocell = nullptr;
+    unsigned int mapx, mapy;
+    worldToMap(pose.pose.position.x, pose.pose.position.y, mapx, mapy);
+
+    macroCellExists(mapx, mapy, macrocell);
+    if (macrocell != nullptr)
+    {
+      for (auto feature_vector : msg.feature_values)
+      {
+        macrocell->updateWeights(true, feature_vector);
+      }
+    }
+  }
+
+
+  update_mutex_.unlock();
 }
 
 void DemonstrationLayer::macroCellExists(int x, int y, MacroCell* output)
@@ -79,26 +120,24 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
   if (!enabled_)
     return;
 
-  // iterate over cells in the actual plan that aren't in demo plan.
-  // we want to decrease the weights by some fraction LEARNING_RATE_ of their inputs
-
-  // iterate over cells in the demo plan that aren't in actual plan.
-  // we want to increase the weights by some fraction LEARNING_RATE_ of their inputs
-
+  update_mutex_.lock();
   for (int j = min_j; j < max_j; j++)
   {
     for (int i = min_i; i < max_i; i++)
     {
       int cost = master_grid.getCost(i, j);
 
-      MacroCell *macrocell;
+      // if the cell is part of a macrocell, calculate its cost based on the
+      // features & weights
+      MacroCell *macrocell = nullptr;
       macroCellExists(i, j, macrocell);
       if (macrocell != nullptr){
-        cost += macrocell->costGivenFeatures(latest_feature_values_);
+        cost = macrocell->costGivenFeatures(latest_feature_values_);
       }
 
       master_grid.setCost(i, j, cost);
     }
   }
+  update_mutex_.unlock();
 }
 }
