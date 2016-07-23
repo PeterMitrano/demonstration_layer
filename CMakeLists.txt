@@ -27,7 +27,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(demonstration_layer src/demonstration_layer.cpp)
+add_library(demonstration_layer src/demonstration_layer.cpp src/macrocell.cpp src/feature.cpp)
 
 add_dependencies(demonstration_layer ${PROJECT_NAME}_gencfg)
 

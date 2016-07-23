@@ -9,8 +9,6 @@ PLUGINLIB_EXPORT_CLASS(demonstration_layer::DemonstrationLayer, costmap_2d::Laye
 
 namespace demonstration_layer
 {
-double DemonstrationLayer::learning_rate_ = 0.1;
-
 DemonstrationLayer::DemonstrationLayer() : new_demonstration_(false)
 {
 }
@@ -26,7 +24,7 @@ void DemonstrationLayer::onInitialize()
   {
     int macro_cell_size_tmp;
     int number_of_features_tmp;
-    private_nh.param<double>("learning_rate", learning_rate_, 0.1);
+    private_nh.param<double>("learning_rate", MacroCell::learning_rate_, 0.1);
     private_nh.param<int>("macro_cell_size", macro_cell_size_tmp, 4);
     private_nh.param<int>("number_of_features", number_of_features_tmp, 1);
 
@@ -61,7 +59,7 @@ void DemonstrationLayer::onInitialize()
 
   ROS_INFO("Number of features: %i", number_of_features_);
   ROS_INFO("MacroCell size: %i", macro_cell_size_);
-  ROS_INFO("Learning rate: %f", learning_rate_);
+  ROS_INFO("Learning rate: %f", MacroCell::learning_rate_);
 }
 
 void DemonstrationLayer::matchSize()
@@ -76,7 +74,7 @@ void DemonstrationLayer::matchSize()
 void DemonstrationLayer::reconfigureCB(DemonstrationLayerConfig& config, uint32_t level)
 {
   enabled_ = config.enabled;
-  learning_rate_ = config.learning_rate;
+  MacroCell::learning_rate_ = config.learning_rate;
 
   if (config.macro_cell_size < 1)
   {
@@ -208,8 +206,8 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
       macroCellExists(i, j, &macrocell);
       if (macrocell != nullptr)
       {
-        cost = macrocell->costGivenFeatures(cost, latest_feature_values_);
-        ROS_INFO("cell at (%i,%i) is part of existing macrocell. Cost is %i", i, j, cost);
+        double raw_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
+        ROS_INFO("cell at (%i,%i) is part of existing macrocell. raw cost is %f", i, j, raw_cost);
       }
 
       master_grid.setCost(i, j, cost);

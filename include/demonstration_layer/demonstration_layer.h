@@ -1,5 +1,8 @@
 #pragma once
 
+#include "demonstration_layer/feature.h"
+#include "demonstration_layer/macrocell.h"
+
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
 #include <demonstration_layer/DemonstrationLayerConfig.h>
@@ -17,116 +20,6 @@
 
 namespace demonstration_layer
 {
-/* @class Feature
- * @brief features have buckets and buckets have weights. Because
- * demonstrations are sparce, most of the buckets will have no weight. To store
- * buckets efficiently, we only need to know the min, max, and number
- * divisions. So, each feature needs those three numbers. The feature also
- * needs a set of weights, corresponding to some buckets. For storing
- * efficiency, the weight and bucket index are store together as a member of
- * the feature.
- */
-class Feature
-{
-public:
-  /** @brief initializes all weights to zero */
-  Feature(double min, double max, int bucket_count) : min_(min), max_(max), bucket_count_(bucket_count)
-  {
-    // initialize the first weight to 1 because that's the map cost
-    // the rest start as 0
-    auto it = bucket_to_weight_map_.begin();
-    it->second = 1;
-    it++;
-    for (; it != bucket_to_weight_map_.end(); it++)
-    {
-      it->second = 0;
-    }
-  }
-
-  double weightForValue(double feature_value)
-  {
-    int bucket_index = (feature_value - min_) / bucket_count_;
-    auto weight = bucket_to_weight_map_.find(bucket_index);
-
-    if (weight == bucket_to_weight_map_.end())
-    {
-      return 0;
-    }
-    else
-    {
-      return weight->second;
-    }
-  }
-
-  void updateWeightForValue(double feature_value, double delta)
-  {
-    int bucket_index = (feature_value - min_) / bucket_count_;
-    auto weight = bucket_to_weight_map_.find(bucket_index);
-
-    if (weight == bucket_to_weight_map_.end())
-    {
-      std::pair<int, double> new_value;
-      new_value.first = bucket_index;
-      new_value.second = delta;
-      bucket_to_weight_map_.insert(new_value);
-    }
-    else
-    {
-      weight->second += delta;
-    }
-  }
-
-private:
-  double min_;
-  double max_;
-  int bucket_count_;
-  std::map<int, double> bucket_to_weight_map_;
-};
-
-/** @class MacroCell
- * @brief A macro cell is just a group of cells. Each macrocell has a set of
- * corresponding weights there is one weight for each bucket, and several
- * buckets for every feature. We only create a macro cell for areas that recieve
- * demonstration, so it's not a continuous grid.
- */
-class MacroCell
-{
-public:
-  MacroCell(unsigned int x, unsigned int y, unsigned int size, unsigned int number_of_features)
-    : x_(x), y_(y), size_(size), number_of_features_(number_of_features)
-  {
-  }
-  /** @brief computes the linear combination of weights
-   * and values for features of a given state
-   */
-  int costGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::SimpleFloatArray feature_values)
-  {
-    // TODO: calculate cost accounting for weights
-    // remember we also have to return an int from 0 to 128,
-    // so I think we need some kind of normalizing.
-    return underlying_map_cost;
-  }
-
-  void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::SimpleFloatArray feature_values)
-  {
-    // the +1 accounts for the underlying map feature which isn't part of the message.
-    if (feature_values.data.size() != number_of_features_)
-    {
-      ROS_ERROR("MacroCell is looking for %i features, but feature value message only has %lu", number_of_features_,
-                (feature_values.data.size()));
-      return;
-    }
-
-    // TODO: actually handle updating weights
-  }
-
-private:
-  unsigned int x_;     // starting x in map frame
-  unsigned int y_;     // starting y in map frame
-  unsigned int size_;  // width and height in number of cells
-  unsigned int number_of_features_;
-};
-
 /**
  * @class DemonstrationLayer
  * @brief A costmap layer for reducing the cost of specific paths.
@@ -135,7 +28,6 @@ private:
 class DemonstrationLayer : public costmap_2d::Layer, public costmap_2d::Costmap2D
 {
 public:
-  static double learning_rate_;
   DemonstrationLayer();
 
   virtual void onInitialize();
