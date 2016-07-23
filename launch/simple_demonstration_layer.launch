@@ -5,6 +5,8 @@
   <node pkg="demonstration_layer" type="fake_map_tf" name="fake_map_tf"/>
   <node pkg="recovery_supervisor" type="points_to_path" name="points_to_path"/>
   <node pkg="joy" type="joy_node" name="joy"/>
+  <node pkg="point_to_cell" type="point_to_cell" name="point_to_cell" output="screen"/>
+  <node pkg="demonstration_layer" type="fake_demo_input" name="fake_demo_input" output="screen"/>
 
   <!--<node pkg="costmap_2d" type="costmap_2d_node" name="global_costmap" output="screen">-->
     <!--<rosparam file="$(find demonstration_layer)/param/global_costmap_params.yaml" command="load"/>-->
