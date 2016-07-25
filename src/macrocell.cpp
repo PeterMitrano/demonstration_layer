@@ -44,11 +44,12 @@ double MacroCell::rawCostGivenFeatures(int underlying_map_cost,
     return -1;
   }
 
-  double cost = underlying_map_cost * features_[0].weightForValue(underlying_map_cost);
+  double cost = features_[0].costForValue(underlying_map_cost);
 
-  for (unsigned int i = 0; i < number_of_features_; i++)
+  // 0 is for underlying map cost, so we start at 1 and go one further to get all features
+  for (unsigned int i = 1; i < number_of_features_ + 1; i++)
   {
-    cost += feature_values.data[i] * features_[i].weightForValue(feature_values.data[i]);
+    cost += features_[i].costForValue(feature_values.data[i]);
   }
 
   // remember, this isn't normalized at all... so have fun!
@@ -67,12 +68,13 @@ void MacroCell::updateWeights(bool increase, int underlying_map_cost,
 
   double delta = increase ? MacroCell::learning_rate_ : -MacroCell::learning_rate_;
   // handle underlaying map cost
-  features_[0].updateWeightForValue(underlying_map_cost, delta * underlying_map_cost);
+  features_[0].updateWeightForValue(underlying_map_cost, delta);
 
   // then all the other ones
-  for (unsigned int i = 0; i < number_of_features_; i++)
+  // 0 is for underlying map cost, so we start at 1 and go one further to get all features
+  for (unsigned int i = 1; i < number_of_features_ + 1; i++)
   {
-    features_[i].updateWeightForValue(feature_values.data[i], delta * feature_values.data[i]);
+    features_[i].updateWeightForValue(feature_values.data[i], delta);
   }
 }
 }

@@ -12,7 +12,8 @@ Feature::Feature(double min, double max, int bucket_count) : Feature(min, max, b
 {
 }
 
-double Feature::weightForValue(double feature_value)
+
+double Feature::costForValue(double feature_value)
 {
   int bucket_index = (feature_value - min_) / bucket_count_;
   auto weight = bucket_to_weight_map_.find(bucket_index);
@@ -23,7 +24,9 @@ double Feature::weightForValue(double feature_value)
   }
   else
   {
-    return weight->second;
+    // cost = feature_value * weight + bias
+    double cost = feature_value * weight->second.first + weight->second.second;
+    return cost;
   }
 }
 
@@ -34,14 +37,21 @@ void Feature::updateWeightForValue(double feature_value, double delta)
 
   if (weight == bucket_to_weight_map_.end())
   {
-    std::pair<int, double> new_value;
-    new_value.first = bucket_index;
+    std::pair<int, val_t> new_mapping;
+    val_t new_value;
+    new_mapping.first = bucket_index;
+    // new weights start at 0, and 0 + delta = delta
+    // so the weights just start at delta. the bias does the same
+    new_value.first = delta * feature_value;
     new_value.second = delta;
-    bucket_to_weight_map_.insert(new_value);
+    new_mapping.second = new_value;
+
+    bucket_to_weight_map_.insert(new_mapping);
   }
   else
   {
-    weight->second += delta;
+    weight->second.first += delta * feature_value;
+    weight->second.second += delta;
   }
 }
 }
