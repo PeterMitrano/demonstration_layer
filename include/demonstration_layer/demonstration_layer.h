@@ -63,6 +63,8 @@ private:
   dynamic_reconfigure::Server<DemonstrationLayerConfig>* dsrv_;
 
   ros::Subscriber demo_sub_;
+  ros::Time latest_feature_time_;
+  ros::Duration feature_timeout_;
 
   /** @brief recieves feature vectors representing the current state */
   ros::Subscriber state_feature_sub_;

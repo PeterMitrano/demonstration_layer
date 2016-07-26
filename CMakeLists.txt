@@ -37,3 +37,6 @@ target_link_libraries(demonstration_layer
 
 add_dependencies(demonstration_layer ${PROJECT_NAME}_gencfg)
 add_dependencies(demonstration_layer ${catkin_EXPORTED_TARGETS})
+
+catkin_add_gtest(demonstration_layer_test test/tests.cpp)
+target_link_libraries(demonstration_layer_test demonstration_layer)

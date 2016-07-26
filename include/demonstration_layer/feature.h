@@ -1,5 +1,6 @@
 #pragma once
 
+#include <gtest/gtest_prod.h>
 #include <map>
 
 namespace demonstration_layer
@@ -33,5 +34,11 @@ private:
   // the first is the weight, the second is the bias
   typedef std::pair<double, double> val_t;
   std::map<int, std::pair<double, double>> bucket_to_weight_map_;
+
+  int bucketIndexForValue(double feature_value);
+
+  FRIEND_TEST(FeatureTest, BucketIndexTest);
+  FRIEND_TEST(FeatureTest, InitializeWeightTest);
+  FRIEND_TEST(FeatureTest, UpdateWeighTest);
 };
 }

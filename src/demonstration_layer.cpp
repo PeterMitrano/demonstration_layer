@@ -24,9 +24,18 @@ void DemonstrationLayer::onInitialize()
   {
     int macro_cell_size_tmp;
     int number_of_features_tmp;
+    double feature_timeout_tmp;
     private_nh.param<double>("learning_rate", MacroCell::learning_rate_, 0.1);
     private_nh.param<int>("macro_cell_size", macro_cell_size_tmp, 4);
     private_nh.param<int>("number_of_features", number_of_features_tmp, 1);
+    private_nh.param<double>("feature_timeout", feature_timeout_tmp, 1);  // seconds
+
+    if (feature_timeout_tmp <= 0)
+    {
+      ROS_WARN("feature_timeout can't be less than or equal to 0. Setting to 1");
+      feature_timeout_tmp = 1;
+    }
+    feature_timeout_ = ros::Duration(feature_timeout_tmp);
 
     if (number_of_features_tmp < 1)
     {
@@ -127,6 +136,7 @@ void DemonstrationLayer::stateFeatureCallback(const recovery_supervisor_msgs::Si
   ROS_INFO_ONCE("State features are being recieved");
   update_mutex_.lock();
 
+  latest_feature_time_ = ros::Time::now();
   latest_feature_values_ = msg;
 
   update_mutex_.unlock();
@@ -185,12 +195,12 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
   if (new_demonstration_)
   {
     new_demonstration_ = false;
-  }
 
-  for (recovery_supervisor_msgs::SimpleFloatArray feature_vector : latest_demo_.feature_values)
-  {
-    updateCellWeights(latest_demo_.odom_path, master_grid, feature_vector, true);
-    updateCellWeights(latest_demo_.demo_path, master_grid, feature_vector, false);
+    for (recovery_supervisor_msgs::SimpleFloatArray feature_vector : latest_demo_.feature_values)
+    {
+      updateCellWeights(latest_demo_.odom_path, master_grid, feature_vector, true);
+      updateCellWeights(latest_demo_.demo_path, master_grid, feature_vector, false);
+    }
   }
 
   // then set the actual cost
@@ -201,13 +211,25 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
       int cost = master_grid.getCost(i, j);
 
       // if the cell is part of a macrocell, calculate its cost based on the
-      // features & weights
+      // features & weights. Also make sure we're basing this off recent data.
       MacroCell* macrocell = nullptr;
       macroCellExists(i, j, &macrocell);
+      ros::Duration dt = ros::Time::now() - latest_feature_time_;
+      bool state_features_up_to_date = dt < feature_timeout_;
       if (macrocell != nullptr)
       {
-        double raw_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
-        ROS_INFO("cell at (%i,%i) is part of existing macrocell. raw cost is %f", i, j, raw_cost);
+        if (state_features_up_to_date)
+        {
+          double raw_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
+          // TODO: Consider the mathematical reprecussions of this
+          cost = std::max(0, std::min(128, (int)raw_cost));
+
+          ROS_INFO("cell at (%i,%i) is part of existing macrocell. cost is %i", i, j, cost);
+        }
+        else
+        {
+          ROS_WARN("State features are out of date by %fs. Are you publishing to /state_feature?", dt.toSec());
+        }
       }
 
       master_grid.setCost(i, j, cost);
