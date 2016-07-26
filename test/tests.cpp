@@ -160,58 +160,25 @@ TEST(MacroCellTest, LearnBigXIsGood)
   EXPECT_GT((int)cell.rawCostGivenFeatures(map_cost, big_x_feature), map_cost);
 }
 
-TEST(MacroCellTest, RandLearnBigXIsGood)
+TEST(MacroCellTest, RandZerosWeight)
 {
   time_t seed = time(NULL);
-  printf("Using seed time: %lu", seed);
+  printf("Using seed time: %lu\n", seed);
   srand(seed);
 
-  MacroCell cell = MacroCell(10, 10, 8);
-
-  recovery_supervisor_msgs::XYThetaFeature zero_feature;
-  zero_feature.x = 0;
-  zero_feature.y = 0;
-  zero_feature.theta = 0;
-
-  recovery_supervisor_msgs::XYThetaFeature big_x_feature;
-  big_x_feature.x = 10;
-  big_x_feature.y = 0;
-  big_x_feature.theta = 0;
+  MacroCell cell = MacroCell(0, 0, 1);
 
   // getting a fairly random distrobution of a decent number of samples
-  // should mean we learn near-zero weights for y and theta
-  // but non-zero weights for x
-  // this loop is for learning that big x is good. Of course, this doesn't
-  // actually learn the *only* big x is good, it also learns other things
-  // might also be good. That's what the second loop is for.
-  for (int i = 0; i < 100; i++)
+  // should mean we learn near-zero weights
+  for (int i = 0; i < 10000; i++)
   {
-    float random_big_x = 10 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX/2);
-    float random_map_cost = static_cast<float>(rand()) / static_cast<float>(RAND_MAX/128);
-    float random_y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-    float random_theta = static_cast<float>(rand()) / static_cast<float>(RAND_MAX/(2*M_PI));
-    recovery_supervisor_msgs::XYThetaFeature feature;
-    feature.x = random_big_x;
-    feature.y = random_y;
-    feature.theta = random_theta;
-
-    // update weights
-    cell.updateWeights(true, random_map_cost, feature);
-  }
-
-  // In this loop we try to dumb down weights on non-big-x factors by showing that
-  // for random values of all features (except big x) the cost is also randomly increased
-  // or decrease. This way the only consistent trend is that big x = good
-  // All the weights of all non big x buckets should trend towards zero because of this
-  for (int i = 0; i < 100; i++)
-  {
-    float random_non_big_x = -5 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX/10);
+    float random_x = -20 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX/40);
     float random_map_cost = static_cast<float>(rand()) / static_cast<float>(RAND_MAX/128);
     float random_y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
     float random_theta = static_cast<float>(rand()) / static_cast<float>(RAND_MAX/(2*M_PI));
     bool random_direction = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > 0.5;
     recovery_supervisor_msgs::XYThetaFeature feature;
-    feature.x = random_non_big_x;
+    feature.x = random_x;
     feature.y = random_y;
     feature.theta = random_theta;
 
@@ -219,26 +186,13 @@ TEST(MacroCellTest, RandLearnBigXIsGood)
     cell.updateWeights(random_direction, random_map_cost, feature);
   }
 
-  // cost should be increased for big x
-  // it started out as 0
-  EXPECT_GT(cell.rawCostGivenFeatures(0, big_x_feature), 0);
-
-  // but not for other features without big Xs
-  // it also started out as zero
-  // we use one because in practice costs are integers (from 0-128)
-  for (int i = 0; i < 5; i++)
+  // 1 is reasonable tolerance because we want to use cost as an int
+  for (int map_cost = 0; map_cost < 1; map_cost++)
   {
-    float random_non_big_x = -5 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX/10);
-    float random_map_cost = static_cast<float>(rand()) / static_cast<float>(RAND_MAX/128);
-    float random_y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-    float random_theta = static_cast<float>(rand()) / static_cast<float>(RAND_MAX/(2*M_PI));
-    recovery_supervisor_msgs::XYThetaFeature feature;
-    feature.x = random_non_big_x;
-    feature.y = random_y;
-    feature.theta = random_theta;
-
-    // these should all be nearish to zero because x isn't big
-    EXPECT_NEAR(cell.rawCostGivenFeatures(random_map_cost, feature), 0, 0.1);
+    auto weight = cell.map_feature_.weightForValue(map_cost);
+    // kind arbitrarily small value here
+    EXPECT_NEAR(weight.first, 0, 0.01);
+    EXPECT_NEAR(weight.second, 0, 0.01);
   }
 }
 }  //  namespace demonstration_layer

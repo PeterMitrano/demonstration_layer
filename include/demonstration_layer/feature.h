@@ -36,10 +36,12 @@ private:
   std::map<int, std::pair<double, double>> bucket_to_weight_map_;
 
   int bucketIndexForValue(double feature_value);
+  val_t weightForValue(double feature_value);
 
   FRIEND_TEST(FeatureTest, BucketIndexTest);
   FRIEND_TEST(FeatureTest, InitializeWeightTest);
   FRIEND_TEST(FeatureTest, InitializeAndUpdateWeightTest);
   FRIEND_TEST(FeatureTest, UpdateWeightTest);
+  FRIEND_TEST(MacroCellTest, RandZerosWeight);
 };
 }

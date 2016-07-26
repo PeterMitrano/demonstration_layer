@@ -43,6 +43,6 @@ private:
 
   FRIEND_TEST(MacroCellTest, InitializeTest);
   FRIEND_TEST(MacroCellTest, LearnBigXIsGood);
-  FRIEND_TEST(MacroCellTest, RandLearnBigXIsGood);
+  FRIEND_TEST(MacroCellTest, RandZerosWeight);
 };
 }

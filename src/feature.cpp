@@ -55,7 +55,6 @@ void Feature::updateWeightForValue(double feature_value, double delta)
 {
   int bucket_index = bucketIndexForValue(feature_value);
   auto weight = bucket_to_weight_map_.find(bucket_index);
-
   if (weight == bucket_to_weight_map_.end())
   {
     std::pair<int, val_t> new_mapping;
@@ -76,6 +75,20 @@ void Feature::updateWeightForValue(double feature_value, double delta)
   {
     weight->second.first += delta * feature_value;
     weight->second.second += delta;
+  }
+}
+
+Feature::val_t Feature::weightForValue(double feature_value)
+{
+  int bucket_index = bucketIndexForValue(feature_value);
+  auto weight = bucket_to_weight_map_.find(bucket_index);
+  if (weight == bucket_to_weight_map_.end())
+  {
+    return val_t(0, 0);
+  }
+  else
+  {
+    return weight->second;
   }
 }
 }
