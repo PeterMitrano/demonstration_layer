@@ -41,7 +41,7 @@ double Feature::costForValue(double feature_value)
 
   if (weight == bucket_to_weight_map_.end())
   {
-    return initial_weight_for_new_buckets_;
+    return feature_value * initial_weight_for_new_buckets_;
   }
   else
   {
@@ -61,10 +61,13 @@ void Feature::updateWeightForValue(double feature_value, double delta)
     std::pair<int, val_t> new_mapping;
     val_t new_value;
     new_mapping.first = bucket_index;
-    // new weights start at 0, and 0 + delta = delta
-    // so the weights just start at delta. the bias does the same
-    new_value.first = delta * feature_value;
+
+    new_value.first = (initial_weight_for_new_buckets_ + delta) * feature_value;
+
+    // new biases start at 0, and 0 + delta = delta
+    // so the bias just start at delta
     new_value.second = delta;
+
     new_mapping.second = new_value;
 
     bucket_to_weight_map_.insert(new_mapping);
