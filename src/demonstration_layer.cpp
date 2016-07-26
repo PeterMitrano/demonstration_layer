@@ -23,11 +23,9 @@ void DemonstrationLayer::onInitialize()
 
   {
     int macro_cell_size_tmp;
-    int number_of_features_tmp;
     double feature_timeout_tmp;
     private_nh.param<double>("learning_rate", MacroCell::learning_rate_, 0.1);
     private_nh.param<int>("macro_cell_size", macro_cell_size_tmp, 4);
-    private_nh.param<int>("number_of_features", number_of_features_tmp, 1);
     private_nh.param<double>("feature_timeout", feature_timeout_tmp, 1);  // seconds
 
     if (feature_timeout_tmp <= 0)
@@ -36,16 +34,6 @@ void DemonstrationLayer::onInitialize()
       feature_timeout_tmp = 1;
     }
     feature_timeout_ = ros::Duration(feature_timeout_tmp);
-
-    if (number_of_features_tmp < 1)
-    {
-      ROS_WARN("macro cell size can't be less than 1. Setting to 1");
-      number_of_features_ = 1;
-    }
-    else
-    {
-      number_of_features_ = (unsigned int)number_of_features_tmp;
-    }
 
     if (macro_cell_size_tmp < 1)
     {
@@ -66,7 +54,6 @@ void DemonstrationLayer::onInitialize()
   demo_sub_ = nh.subscribe("demo", 10, &DemonstrationLayer::demoCallback, this);
   state_feature_sub_ = private_nh.subscribe("state_feature", 10, &DemonstrationLayer::stateFeatureCallback, this);
 
-  ROS_INFO("Number of features: %i", number_of_features_);
   ROS_INFO("MacroCell size: %i", macro_cell_size_);
   ROS_INFO("Learning rate: %f", MacroCell::learning_rate_);
 }
@@ -94,16 +81,6 @@ void DemonstrationLayer::reconfigureCB(DemonstrationLayerConfig& config, uint32_
   {
     macro_cell_size_ = (unsigned int)config.macro_cell_size;
   }
-
-  if (config.number_of_features < 1)
-  {
-    ROS_WARN("macro cell size can't be less than 1. Setting to 1");
-    number_of_features_ = 1;
-  }
-  else
-  {
-    number_of_features_ = (unsigned int)config.number_of_features;
-  }
 }
 
 void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
@@ -119,7 +96,7 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
   mapToWorld(map_width_, map_height_, *max_x, *max_y);
 }
 
-void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::Demo& msg)
+void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::XYThetaDemo& msg)
 {
   ROS_INFO_ONCE("Demos are being recieved");
 
@@ -131,7 +108,7 @@ void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::Demo& msg)
   update_mutex_.unlock();
 }
 
-void DemonstrationLayer::stateFeatureCallback(const recovery_supervisor_msgs::SimpleFloatArray& msg)
+void DemonstrationLayer::stateFeatureCallback(const recovery_supervisor_msgs::XYThetaFeature& msg)
 {
   ROS_INFO_ONCE("State features are being recieved");
   update_mutex_.lock();
@@ -156,7 +133,7 @@ void DemonstrationLayer::macroCellExists(int x, int y, MacroCell** output)
 }
 
 void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
-                                           recovery_supervisor_msgs::SimpleFloatArray feature_vector, bool increase)
+                                           recovery_supervisor_msgs::XYThetaFeature feature_vector, bool increase)
 {
   // iterate over cells in the odom path that aren't in demo path.
   // we want to increase the weights by some fraction LEARNING_RATE_ of their inputs
@@ -173,7 +150,7 @@ void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Cost
     if (macrocell == nullptr)
     {
       // no demos here yet, so we need to initialize the new macrocell first
-      macrocell = new MacroCell(macrocell_x, macrocell_y, macro_cell_size_, number_of_features_);
+      macrocell = new MacroCell(macrocell_x, macrocell_y, macro_cell_size_);
       pair_t pair = pair_t(key_t(macrocell_x, macrocell_y), macrocell);
       macrocell_map_.insert(pair);
 
@@ -196,7 +173,7 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
   {
     new_demonstration_ = false;
 
-    for (recovery_supervisor_msgs::SimpleFloatArray feature_vector : latest_demo_.feature_values)
+    for (recovery_supervisor_msgs::XYThetaFeature feature_vector : latest_demo_.feature_values)
     {
       updateCellWeights(latest_demo_.odom_path, master_grid, feature_vector, true);
       updateCellWeights(latest_demo_.demo_path, master_grid, feature_vector, false);

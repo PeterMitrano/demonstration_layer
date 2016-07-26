@@ -6,75 +6,44 @@ namespace demonstration_layer
 {
 double MacroCell::learning_rate_ = 0.1;
 
-MacroCell::MacroCell(unsigned int x, unsigned int y, unsigned int size, unsigned int number_of_features)
-  : x_(x), y_(y), size_(size), number_of_features_(number_of_features)
+MacroCell::MacroCell(unsigned int x, unsigned int y, unsigned int size)
+  : x_(x)
+  , y_(y)
+  , size_(size)
+  , map_feature_(Feature(0, 128, 128, 1))     // map cost
+  , x_feature_(Feature(0, 10, 100))           // meters, global frame
+  , y_feature_(Feature(0, 10, 100))           // meters, global frame
+  , theta_feature_(Feature(0, 2 * M_PI, 16))  // rad, global frame
+  , vx_feature_(Feature(0, 0.5, 10))          // meters/sec, global frame
+  , vy_feature_(Feature(0, 0.1, 10))          // meters/sec, global frame
+  , vtheta_feature_(Feature(0, 0.5, 10))      // rad/sec, global frame
+  , stamp_feature_(Feature(0, 24, 1))         // rad, global frame
+  , goal_feature_(Feature(0, 100, 1))         // 100 should be enough
 {
-  /** This is the sketchies part of the code. Keep in mind there should be
-   * exactly number_of_features + 1 features. The +1 being for
-   * underlayin_map_cost, which isn't sent as a feature_value since only the
-   * costmap knows it.  The order matters.  I may eventually need to refactor a
-   * ton of stuff because this is just disgusting, prone to error, and
-   * impossible to change for other features. Not safe at all...
-   */
-
-  // underlaying map cost gets weight of 1
-  // so that before any demos the cost is
-  // exactly equal to the underlying cost
-  Feature map_feature = Feature(0, 128, 128, 1);
-  Feature robot_x_feature = Feature(0, 10, 100);                 // meters, global frame
-  Feature robot_y_feature = Feature(0, 10, 100);                 // meters, global frame
-  Feature robot_theta_feature = Feature(0, 2 * M_PI, M_PI / 4);  // rad, global frame
-
-  features_.push_back(map_feature);
-  features_.push_back(robot_x_feature);
-  features_.push_back(robot_y_feature);
-  features_.push_back(robot_theta_feature);
 }
 
 /** @brief computes the linear combination of weights
  * and values for features of a given state
  */
-double MacroCell::rawCostGivenFeatures(int underlying_map_cost,
-                                       recovery_supervisor_msgs::SimpleFloatArray feature_values)
+double MacroCell::rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::XYThetaFeature feature_values)
 {
-  if (feature_values.data.size() != number_of_features_)
-  {
-    ROS_ERROR("MacroCell is looking for %i features, but feature value message only has %lu", number_of_features_,
-              (feature_values.data.size()));
-    return -1;
-  }
-
-  double cost = features_[0].costForValue(underlying_map_cost);
-
-  // 0 is for underlying map cost, so we start at 1 and go one further to get all features
-  for (unsigned int i = 1; i < number_of_features_ + 1; i++)
-  {
-    cost += features_[i].costForValue(feature_values.data[i]);
-  }
+  double cost = 0;
+  cost += map_feature_.costForValue(underlying_map_cost);
+  cost += x_feature_.costForValue(feature_values.x);
+  cost += y_feature_.costForValue(feature_values.y);
+  cost += theta_feature_.costForValue(feature_values.theta);
 
   // remember, this isn't normalized at all... so have fun!
   return cost;
 }
 
 void MacroCell::updateWeights(bool increase, int underlying_map_cost,
-                              recovery_supervisor_msgs::SimpleFloatArray feature_values)
+                              recovery_supervisor_msgs::XYThetaFeature feature_values)
 {
-  if (feature_values.data.size() != number_of_features_)
-  {
-    ROS_ERROR("MacroCell is looking for %i features, but feature value message only has %lu", number_of_features_,
-              (feature_values.data.size()));
-    return;
-  }
-
   double delta = increase ? MacroCell::learning_rate_ : -MacroCell::learning_rate_;
-  // handle underlaying map cost
-  features_[0].updateWeightForValue(underlying_map_cost, delta);
-
-  // then all the other ones
-  // 0 is for underlying map cost, so we start at 1 and go one further to get all features
-  for (unsigned int i = 1; i < number_of_features_ + 1; i++)
-  {
-    features_[i].updateWeightForValue(feature_values.data[i], delta);
-  }
+  map_feature_.updateWeightForValue(underlying_map_cost, delta);
+  x_feature_.updateWeightForValue(feature_values.x, delta);
+  y_feature_.updateWeightForValue(feature_values.y, delta);
+  theta_feature_.updateWeightForValue(feature_values.theta, delta);
 }
 }

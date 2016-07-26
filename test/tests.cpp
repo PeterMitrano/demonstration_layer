@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "demonstration_layer/feature.h"
+#include "demonstration_layer/macrocell.h"
 
 #include <ros/ros.h>
 #include <cmath>
@@ -9,7 +10,7 @@ namespace demonstration_layer
 TEST(FeatureTest, BucketIndexTest)
 {
   Feature f(0, 10, 10);
-  for (int i=0;i<10;i++)
+  for (int i = 0; i < 10; i++)
   {
     EXPECT_EQ(i, f.bucketIndexForValue(i));
   }
@@ -81,6 +82,23 @@ TEST(FeatureTest, UpdateWeightTest)
 
   f.updateWeightForValue(1, -0.01);
   EXPECT_EQ(0, f.costForValue(1));
+}
+
+TEST(MacroCellTest, InitializeTest)
+{
+  MacroCell cell = MacroCell(0, 0, 4);
+
+  recovery_supervisor_msgs::XYThetaFeature zero_feature;
+  zero_feature.x = 0;
+  zero_feature.y = 0;
+  zero_feature.theta = 0;
+
+  recovery_supervisor_msgs::XYThetaFeature big_x_feature;
+  zero_feature.x = 10;
+  zero_feature.y = 0;
+  zero_feature.theta = 0;
+
+  EXPECT_EQ(cell.rawCostGivenFeatures(0, zero_feature), 0);
 }
 }  //  namespace demonstration_layer
 
