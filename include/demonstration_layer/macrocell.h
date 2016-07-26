@@ -42,5 +42,7 @@ private:
   Feature goal_feature_;
 
   FRIEND_TEST(MacroCellTest, InitializeTest);
+  FRIEND_TEST(MacroCellTest, LearnBigXIsGood);
+  FRIEND_TEST(MacroCellTest, RandLearnBigXIsGood);
 };
 }

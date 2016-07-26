@@ -39,6 +39,7 @@ private:
 
   FRIEND_TEST(FeatureTest, BucketIndexTest);
   FRIEND_TEST(FeatureTest, InitializeWeightTest);
+  FRIEND_TEST(FeatureTest, InitializeAndUpdateWeightTest);
   FRIEND_TEST(FeatureTest, UpdateWeightTest);
 };
 }

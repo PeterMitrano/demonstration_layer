@@ -6,13 +6,15 @@ namespace demonstration_layer
 {
 double MacroCell::learning_rate_ = 0.1;
 
+// TODO: Consider passing in all the features
+// this whole class/message thing in general is still super shitty.
 MacroCell::MacroCell(unsigned int x, unsigned int y, unsigned int size)
   : x_(x)
   , y_(y)
   , size_(size)
-  , map_feature_(Feature(0, 128, 128, 1))     // map cost
-  , x_feature_(Feature(0, 10, 100))           // meters, global frame
-  , y_feature_(Feature(0, 10, 100))           // meters, global frame
+  , map_feature_(Feature(0, 128, 128, 1))     // map cost, initialize weights to 1
+  , x_feature_(Feature(-20, 20, 1000))           // meters, global frame
+  , y_feature_(Feature(-20, 20, 1000))           // meters, global frame
   , theta_feature_(Feature(0, 2 * M_PI, 16))  // rad, global frame
   , vx_feature_(Feature(0, 0.5, 10))          // meters/sec, global frame
   , vy_feature_(Feature(0, 0.1, 10))          // meters/sec, global frame

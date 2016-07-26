@@ -62,7 +62,7 @@ void Feature::updateWeightForValue(double feature_value, double delta)
     val_t new_value;
     new_mapping.first = bucket_index;
 
-    new_value.first = (initial_weight_for_new_buckets_ + delta) * feature_value;
+    new_value.first = initial_weight_for_new_buckets_ + (delta * feature_value);
 
     // new biases start at 0, and 0 + delta = delta
     // so the bias just start at delta
