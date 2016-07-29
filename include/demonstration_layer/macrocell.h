@@ -3,6 +3,7 @@
 #include "demonstration_layer/feature.h"
 
 #include <gtest/gtest_prod.h>
+#include <recovery_supervisor_msgs/GoalFeature.h>
 #include <recovery_supervisor_msgs/XYThetaFeature.h>
 #include <vector>
 
@@ -20,12 +21,15 @@ public:
   static double learning_rate_;
 
   MacroCell(unsigned int x, unsigned int y, unsigned int size);
+
   /** @brief computes the linear combination of weights
    * and values for features of a given state
    */
   double rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::XYThetaFeature feature_values);
+  double rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::GoalFeature feature_values);
 
   void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::XYThetaFeature feature_values);
+  void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::GoalFeature feature_values);
 
 private:
   unsigned int x_;     // starting x in map frame

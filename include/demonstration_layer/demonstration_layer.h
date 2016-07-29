@@ -10,6 +10,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
+#include <recovery_supervisor_msgs/GoalDemo.h>
 #include <recovery_supervisor_msgs/XYThetaDemo.h>
 #include <recovery_supervisor_msgs/XYThetaFeature.h>
 #include <ros/ros.h>
@@ -51,13 +52,18 @@ public:
   virtual void matchSize();
 
 private:
+  bool has_warned_;
   bool new_demonstration_;
-  unsigned int macro_cell_size_;
+
+  double min_cost_learned_;
+  double max_cost_learned_;
 
   mutable std::mutex update_mutex_;
 
+  unsigned int macro_cell_size_;
   unsigned int map_width_;
   unsigned int map_height_;
+  unsigned int** learned_costs_;
 
   dynamic_reconfigure::Server<DemonstrationLayerConfig>* dsrv_;
 
@@ -68,8 +74,8 @@ private:
   /** @brief recieves feature vectors representing the current state */
   ros::Subscriber state_feature_sub_;
 
-  recovery_supervisor_msgs::XYThetaFeature latest_feature_values_;
-  recovery_supervisor_msgs::XYThetaDemo latest_demo_;
+  recovery_supervisor_msgs::GoalFeature latest_feature_values_;
+  recovery_supervisor_msgs::GoalDemo latest_demo_;
 
   // container for macrocells. When we get a demo, we need to find or create
   // the macrocells for various poses. So since we only ever lookup macrocells,
@@ -80,12 +86,13 @@ private:
 
   void macroCellExists(int x, int y, MacroCell** output);
 
-  void demoCallback(const recovery_supervisor_msgs::XYThetaDemo& msg);
+  void demoCallback(const recovery_supervisor_msgs::GoalDemo& msg);
   void reconfigureCB(demonstration_layer::DemonstrationLayerConfig& config, uint32_t level);
-  void stateFeatureCallback(const recovery_supervisor_msgs::XYThetaFeature& msg);
+  void renormalizeLearnedCosts(int min_i, int max_i, int min_j, int max_j, costmap_2d::Costmap2D& master_grid);
+  void stateFeatureCallback(const recovery_supervisor_msgs::GoalFeature& msg);
 
   /** @brief updates the weights for all the macrocells along a path, given a set of feature values */
   void updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
-                         recovery_supervisor_msgs::XYThetaFeature feature_vector, bool increase);
+                         recovery_supervisor_msgs::GoalFeature feature_vector, bool increase);
 };
 }

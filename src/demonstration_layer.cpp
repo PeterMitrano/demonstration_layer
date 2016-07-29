@@ -9,7 +9,7 @@ PLUGINLIB_EXPORT_CLASS(demonstration_layer::DemonstrationLayer, costmap_2d::Laye
 
 namespace demonstration_layer
 {
-DemonstrationLayer::DemonstrationLayer() : new_demonstration_(false)
+DemonstrationLayer::DemonstrationLayer() : has_warned_(false), new_demonstration_(false)
 {
 }
 
@@ -20,6 +20,15 @@ void DemonstrationLayer::onInitialize()
   current_ = true;
   default_value_ = costmap_2d::NO_INFORMATION;
   matchSize();
+
+  // this has to come after matchSize
+  min_cost_learned_ = std::numeric_limits<double>::max();
+  max_cost_learned_ = std::numeric_limits<double>::min();
+  learned_costs_ = new unsigned int*[map_width_];
+  for (unsigned int i = 0; i < map_width_; i++)
+  {
+    learned_costs_[i] = new unsigned int[map_height_];
+  }
 
   {
     int macro_cell_size_tmp;
@@ -96,7 +105,7 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
   mapToWorld(map_width_, map_height_, *max_x, *max_y);
 }
 
-void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::XYThetaDemo& msg)
+void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::GoalDemo& msg)
 {
   ROS_INFO_ONCE("Demos are being recieved");
 
@@ -108,7 +117,7 @@ void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::XYThetaDem
   update_mutex_.unlock();
 }
 
-void DemonstrationLayer::stateFeatureCallback(const recovery_supervisor_msgs::XYThetaFeature& msg)
+void DemonstrationLayer::stateFeatureCallback(const recovery_supervisor_msgs::GoalFeature& msg)
 {
   ROS_INFO_ONCE("State features are being recieved");
   update_mutex_.lock();
@@ -119,6 +128,10 @@ void DemonstrationLayer::stateFeatureCallback(const recovery_supervisor_msgs::XY
   update_mutex_.unlock();
 }
 
+/** @brief checks if a macrocell exists
+ * @param x the macrocell x (or map x / macro_cell_size_)
+ * @param y the macrocell y (or map y / macro_cell_size_)
+ */
 void DemonstrationLayer::macroCellExists(int x, int y, MacroCell** output)
 {
   auto macrocell_it = macrocell_map_.find(key_t(x, y));
@@ -128,37 +141,84 @@ void DemonstrationLayer::macroCellExists(int x, int y, MacroCell** output)
   }
   else
   {
-    output = nullptr;
+    (*output) = nullptr;
   }
 }
 
 void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
-                                           recovery_supervisor_msgs::XYThetaFeature feature_vector, bool increase)
+                                           recovery_supervisor_msgs::GoalFeature feature_vector, bool increase)
 {
   // iterate over cells in the odom path that aren't in demo path.
   // we want to increase the weights by some fraction LEARNING_RATE_ of their inputs
-  for (auto pose : path.poses)
+  geometry_msgs::PoseStamped prev_pose;
+  geometry_msgs::PoseStamped pose;
+  for (size_t i = 1; i < path.poses.size(); i++)
   {
-    MacroCell* macrocell = nullptr;
-    unsigned int mapx, mapy;
+    pose = path.poses[i];
+    prev_pose = path.poses[i - 1];
+
+    unsigned int prev_mapx, prev_mapy, mapx, mapy;
+    worldToMap(prev_pose.pose.position.x, prev_pose.pose.position.y, prev_mapx, prev_mapy);
     worldToMap(pose.pose.position.x, pose.pose.position.y, mapx, mapy);
-    int underlying_map_cost = master_grid.getCost(mapx, mapy);
-    unsigned int macrocell_x = mapx - macro_cell_size_ / 2;
-    unsigned int macrocell_y = mapy - macro_cell_size_ / 2;
 
-    macroCellExists(macrocell_x, macrocell_y, &macrocell);
-    if (macrocell == nullptr)
+    ROS_INFO("%i,%i to %i,%i", prev_mapx, prev_mapy, mapx, mapy);
+    LineIterator line(prev_mapx, prev_mapy, mapx, mapy);
+    while (line.isValid())
     {
-      // no demos here yet, so we need to initialize the new macrocell first
-      macrocell = new MacroCell(macrocell_x, macrocell_y, macro_cell_size_);
-      pair_t pair = pair_t(key_t(macrocell_x, macrocell_y), macrocell);
-      macrocell_map_.insert(pair);
+      int underlying_map_cost = master_grid.getCost(line.getY(), line.getY());
+      unsigned int macrocell_x = line.getX() / macro_cell_size_;
+      unsigned int macrocell_y = line.getY() / macro_cell_size_;
 
-      ROS_INFO("Inserting new macro cell of size %i, (%i,%i) -> (%i,%i).", macro_cell_size_, mapx, mapy, macrocell_x,
-               macrocell_y);
+      MacroCell* macrocell = nullptr;
+      macroCellExists(macrocell_x, macrocell_y, &macrocell);
+      if (macrocell == nullptr)
+      {
+        // no demos here yet, so we need to initialize the new macrocell first
+        macrocell = new MacroCell(macrocell_x, macrocell_y, macro_cell_size_);
+        pair_t pair = pair_t(key_t(macrocell_x, macrocell_y), macrocell);
+        macrocell_map_.insert(pair);
+      }
+
+      ROS_INFO("updating cell (%i,%i) of macrocell (%i,%i) of size %i", line.getX(), line.getY(), macrocell_x, macrocell_y,
+          macro_cell_size_);
+      macrocell->updateWeights(increase, underlying_map_cost, feature_vector);
+      line.advance();
     }
+  }
+}
 
-    macrocell->updateWeights(increase, underlying_map_cost, feature_vector);
+void DemonstrationLayer::renormalizeLearnedCosts(int min_i, int max_i, int min_j, int max_j,
+                                                 costmap_2d::Costmap2D& master_grid)
+{
+  // First normalize the costs so they're between 0 and 128
+  for (int j = min_j; j < max_j; j++)
+  {
+    for (int i = min_i; i < max_i; i++)
+    {
+      float cost = master_grid.getCost(i, j);
+
+      // if the cell is part of a macrocell, calculate its cost based on the
+      // features & weights. Also make sure we're basing this off recent data.
+      int mx = i / macro_cell_size_;
+      int my = j / macro_cell_size_;
+      MacroCell* macrocell = nullptr;
+      macroCellExists(mx, my, &macrocell);
+      if (macrocell != nullptr)
+      {
+        float learned_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
+        ROS_INFO("%i,%i, %.3f + %.3f", i, j, cost, learned_cost);
+        learned_costs_[i][j] = cost;
+      }
+
+      if (cost < min_cost_learned_)
+      {
+        min_cost_learned_ = cost;
+      }
+      if (cost > max_cost_learned_)
+      {
+        max_cost_learned_ = cost;
+      }
+    }
   }
 }
 
@@ -173,14 +233,15 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
   {
     new_demonstration_ = false;
 
-    for (recovery_supervisor_msgs::XYThetaFeature feature_vector : latest_demo_.feature_values)
+    for (recovery_supervisor_msgs::GoalFeature feature_vector : latest_demo_.feature_values)
     {
       updateCellWeights(latest_demo_.odom_path, master_grid, feature_vector, true);
       updateCellWeights(latest_demo_.demo_path, master_grid, feature_vector, false);
     }
+
+    renormalizeLearnedCosts(min_i, max_i, min_j, max_j, master_grid);
   }
 
-  // then set the actual cost
   for (int j = min_j; j < max_j; j++)
   {
     for (int i = min_i; i < max_i; i++)
@@ -189,26 +250,29 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
 
       // if the cell is part of a macrocell, calculate its cost based on the
       // features & weights. Also make sure we're basing this off recent data.
+      int mx = i / macro_cell_size_;
+      int my = j / macro_cell_size_;
       MacroCell* macrocell = nullptr;
-      macroCellExists(i, j, &macrocell);
+      macroCellExists(mx, my, &macrocell);
       ros::Duration dt = ros::Time::now() - latest_feature_time_;
       bool state_features_up_to_date = dt < feature_timeout_;
       if (macrocell != nullptr)
       {
         if (state_features_up_to_date)
         {
-          double raw_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
-          // TODO: Consider the mathematical reprecussions of this
-          cost = std::max(0, std::min(128, (int)raw_cost));
-
-          ROS_INFO("cell at (%i,%i) is part of existing macrocell. cost is %i", i, j, cost);
+          int learned_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
+          cost = std::min(std::max(learned_cost, 0), 128);
+          has_warned_ = false;
         }
         else
         {
-          ROS_WARN("State features are out of date by %fs. Are you publishing to /state_feature?", dt.toSec());
+          if (!has_warned_)
+          {
+            has_warned_ = true;
+            ROS_WARN("State features are out of date by %.2fs. Are you publishing to /state_feature?", dt.toSec());
+          }
         }
       }
-
       master_grid.setCost(i, j, cost);
     }
   }

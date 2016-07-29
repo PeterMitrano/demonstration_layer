@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Grid1/Offset1
+        - /Global Costmap1
         - /Demo Path1
       Splitter Ratio: 0.5
     Tree Height: 437
@@ -158,7 +159,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: 0.025
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
@@ -167,11 +168,11 @@ Visualization Manager:
         Value: false
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 73.3918
+      Scale: 101.688
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 5.64494
-      Y: 1.78117
+      X: 3.52474
+      Y: 3.95462
     Saved: ~
 Window Geometry:
   Displays:

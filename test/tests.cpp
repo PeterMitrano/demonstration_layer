@@ -4,10 +4,10 @@
 
 #include <ros/ros.h>
 #include <cmath>
+#include <cstdio>
 
 namespace demonstration_layer
 {
-
 const float TEST_LEARNING_RATE = 0.1;
 
 TEST(FeatureTest, BucketIndexTest)
@@ -163,27 +163,27 @@ TEST(MacroCellTest, LearnBigXIsGood)
 TEST(MacroCellTest, RandZerosWeight)
 {
   time_t seed = time(NULL);
+  FILE *f = fopen("RandZerosWeightTest.log", "w");
   printf("Using seed time: %lu\n", seed);
   srand(seed);
 
   MacroCell cell = MacroCell(0, 0, 1);
+  cell.learning_rate_ = 0.01;
 
   // getting a fairly random distrobution of a decent number of samples
   // should mean we learn near-zero weights
   for (int i = 0; i < 10000; i++)
   {
-    float random_x = -20 + static_cast<float>(rand()) / static_cast<float>(RAND_MAX/40);
-    float random_map_cost = static_cast<float>(rand()) / static_cast<float>(RAND_MAX/128);
-    float random_y = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-    float random_theta = static_cast<float>(rand()) / static_cast<float>(RAND_MAX/(2*M_PI));
     bool random_direction = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > 0.5;
     recovery_supervisor_msgs::XYThetaFeature feature;
-    feature.x = random_x;
-    feature.y = random_y;
-    feature.theta = random_theta;
+    feature.x = 0;
+    feature.y = 0;
+    feature.theta = 0;
 
     // update weights
-    cell.updateWeights(random_direction, random_map_cost, feature);
+    cell.updateWeights(random_direction, 0, feature);
+    fprintf(f, "%f, %f\n", cell.map_feature_.bucket_to_weight_map_[0].first,
+            cell.map_feature_.bucket_to_weight_map_[0].second);
   }
 
   // 1 is reasonable tolerance because we want to use cost as an int
@@ -191,9 +191,11 @@ TEST(MacroCellTest, RandZerosWeight)
   {
     auto weight = cell.map_feature_.weightForValue(map_cost);
     // kind arbitrarily small value here
-    EXPECT_NEAR(weight.first, 0, 0.01);
-    EXPECT_NEAR(weight.second, 0, 0.01);
+    EXPECT_NEAR(weight.first, 1, cell.learning_rate_ * 10);
+    EXPECT_NEAR(weight.second, 0, cell.learning_rate_ * 10);
   }
+
+  fclose(f);
 }
 }  //  namespace demonstration_layer
 

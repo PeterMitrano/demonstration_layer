@@ -5,8 +5,8 @@ from sensor_msgs.msg import Joy
 from std_msgs.msg import Bool
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import PoseStamped
-from recovery_supervisor_msgs.msg import Demo
-from recovery_supervisor_msgs.msg import SimpleFloatArray
+from recovery_supervisor_msgs.msg import GoalDemo
+from recovery_supervisor_msgs.msg import GoalFeature
 from nav_msgs.msg import Path
 
 class FakeDemoInput:
@@ -20,7 +20,7 @@ class FakeDemoInput:
 
   showing_demo_path_ = False
   latest_path_ = Path()
-  demo_msg_ = Demo()
+  demo_msg_ = GoalDemo()
 
   def __init__(self):
     rospy.init_node("fake_demo_input")
@@ -28,7 +28,7 @@ class FakeDemoInput:
     path_sub = rospy.Subscriber("points_to_path/path", Path, self.pathCallback)
 
     self.demo_status_pub_ = rospy.Publisher("recovery_supervisor/demonstration_status", Bool, queue_size=10)
-    self.demo_pub_ = rospy.Publisher("demo", Demo, queue_size=10)
+    self.demo_pub_ = rospy.Publisher("demo", GoalDemo, queue_size=10)
 
     self.printUsage()
 
@@ -55,20 +55,15 @@ class FakeDemoInput:
     if msg.buttons[5]: # input new feature vectors one at a time
       # clear nany old data
       self.demo_msg_.feature_values = []
+
       print "Waiting for input..."
-      while True:
-        line = raw_input()
 
-        if line == "":
-          break
-
-        try:
-          new_feature_values = [float(i) for i in line.split(',')]
-          arr = SimpleFloatArray()
-          arr.data = new_feature_values
-          self.demo_msg_.feature_values.append(arr)
-        except ValueError:
-          rospy.loginfo("You must enter comma seperated floats")
+      try:
+        feat = GoalFeature()
+        feat.goal = int(raw_input())
+        self.demo_msg_.feature_values.append(feat)
+      except ValueError:
+        rospy.loginfo("You must enter one integer")
 
     if msg.buttons[6]: # start of a new demo path
       self.showing_demo_path_ = True
