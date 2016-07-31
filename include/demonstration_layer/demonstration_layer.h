@@ -52,18 +52,16 @@ public:
   virtual void matchSize();
 
 private:
-  bool has_warned_;
   bool new_demonstration_;
 
   double min_cost_learned_;
-  double max_cost_learned_;
 
   mutable std::mutex update_mutex_;
 
   unsigned int macro_cell_size_;
   unsigned int map_width_;
   unsigned int map_height_;
-  unsigned int** learned_costs_;
+  unsigned int** cached_costs_;
 
   dynamic_reconfigure::Server<DemonstrationLayerConfig>* dsrv_;
 

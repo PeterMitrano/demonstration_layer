@@ -9,7 +9,7 @@ PLUGINLIB_EXPORT_CLASS(demonstration_layer::DemonstrationLayer, costmap_2d::Laye
 
 namespace demonstration_layer
 {
-DemonstrationLayer::DemonstrationLayer() : has_warned_(false), new_demonstration_(false)
+DemonstrationLayer::DemonstrationLayer() : new_demonstration_(false)
 {
 }
 
@@ -23,11 +23,10 @@ void DemonstrationLayer::onInitialize()
 
   // this has to come after matchSize
   min_cost_learned_ = std::numeric_limits<double>::max();
-  max_cost_learned_ = std::numeric_limits<double>::min();
-  learned_costs_ = new unsigned int*[map_width_];
+  cached_costs_ = new unsigned int*[map_width_];
   for (unsigned int i = 0; i < map_width_; i++)
   {
-    learned_costs_[i] = new unsigned int[map_height_];
+    cached_costs_[i] = new unsigned int[map_height_];
   }
 
   {
@@ -205,18 +204,15 @@ void DemonstrationLayer::renormalizeLearnedCosts(int min_i, int max_i, int min_j
       macroCellExists(mx, my, &macrocell);
       if (macrocell != nullptr)
       {
-        float learned_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
-        ROS_INFO("%i,%i, %.3f + %.3f", i, j, cost, learned_cost);
-        learned_costs_[i][j] = cost;
+        cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
+        ROS_INFO("%i,%i, %.3f", i, j, cost);
       }
 
+      cached_costs_[i][j] = cost;
       if (cost < min_cost_learned_)
       {
+        // we use this value to add to our cost in updateCosts
         min_cost_learned_ = cost;
-      }
-      if (cost > max_cost_learned_)
-      {
-        max_cost_learned_ = cost;
       }
     }
   }
@@ -246,33 +242,11 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
   {
     for (int i = min_i; i < max_i; i++)
     {
-      int cost = master_grid.getCost(i, j);
+      int cost = cached_costs_[i][j] + min_cost_learned_;
 
-      // if the cell is part of a macrocell, calculate its cost based on the
-      // features & weights. Also make sure we're basing this off recent data.
-      int mx = i / macro_cell_size_;
-      int my = j / macro_cell_size_;
-      MacroCell* macrocell = nullptr;
-      macroCellExists(mx, my, &macrocell);
-      ros::Duration dt = ros::Time::now() - latest_feature_time_;
-      bool state_features_up_to_date = dt < feature_timeout_;
-      if (macrocell != nullptr)
-      {
-        if (state_features_up_to_date)
-        {
-          int learned_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
-          cost = std::min(std::max(learned_cost, 0), 128);
-          has_warned_ = false;
-        }
-        else
-        {
-          if (!has_warned_)
-          {
-            has_warned_ = true;
-            ROS_WARN("State features are out of date by %.2fs. Are you publishing to /state_feature?", dt.toSec());
-          }
-        }
-      }
+      // the min shouldn't matter but the max might
+      cost = std::min(std::max(cost, 0), 128);
+
       master_grid.setCost(i, j, cost);
     }
   }
