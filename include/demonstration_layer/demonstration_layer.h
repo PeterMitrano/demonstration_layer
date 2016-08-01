@@ -15,6 +15,7 @@
 #include <recovery_supervisor_msgs/XYThetaFeature.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_srvs/Empty.h>
 #include <boost/thread/shared_mutex.hpp>
 #include <map>
 #include <mutex>
@@ -65,9 +66,10 @@ private:
 
   dynamic_reconfigure::Server<DemonstrationLayerConfig>* dsrv_;
 
+  ros::Duration feature_timeout_;
+  ros::ServiceServer clear_service_;
   ros::Subscriber demo_sub_;
   ros::Time latest_feature_time_;
-  ros::Duration feature_timeout_;
 
   /** @brief recieves feature vectors representing the current state */
   ros::Subscriber state_feature_sub_;
@@ -82,9 +84,9 @@ private:
   typedef std::pair<key_t, MacroCell*> pair_t;
   std::map<key_t, MacroCell*> macrocell_map_;
 
-  void macroCellExists(int x, int y, MacroCell** output);
-
+  bool clearCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response);
   void demoCallback(const recovery_supervisor_msgs::GoalDemo& msg);
+  void macroCellExists(int x, int y, MacroCell** output);
   void reconfigureCB(demonstration_layer::DemonstrationLayerConfig& config, uint32_t level);
   void renormalizeLearnedCosts(int min_i, int max_i, int min_j, int max_j, costmap_2d::Costmap2D& master_grid);
   void stateFeatureCallback(const recovery_supervisor_msgs::GoalFeature& msg);

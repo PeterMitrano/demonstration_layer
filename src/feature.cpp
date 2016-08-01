@@ -72,4 +72,10 @@ Feature::val_t Feature::weightForValue(double feature_value)
     return weight->second;
   }
 }
+
+void Feature::zeroAllWeights()
+{
+  // lol yea so this is probably the fatest way
+  bucket_to_weight_map_.clear();
+}
 }

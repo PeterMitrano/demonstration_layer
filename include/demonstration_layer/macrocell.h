@@ -31,6 +31,8 @@ public:
   void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::XYThetaFeature feature_values);
   void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::GoalFeature feature_values);
 
+  void zeroAllWeights();
+
 private:
   unsigned int x_;     // starting x in map frame
   unsigned int y_;     // starting y in map frame

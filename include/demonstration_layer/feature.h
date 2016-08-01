@@ -25,6 +25,7 @@ public:
 
   void updateWeightForValue(double feature_value, double delta);
   double costForValue(double feature_value);
+  void zeroAllWeights();
 
 private:
   double initial_weight_for_new_buckets_;

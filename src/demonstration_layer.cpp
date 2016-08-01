@@ -3,13 +3,14 @@
 #include <pluginlib/class_list_macros.h>
 
 #include <algorithm>
+#include <cmath>
 #include <sstream>
 
 PLUGINLIB_EXPORT_CLASS(demonstration_layer::DemonstrationLayer, costmap_2d::Layer)
 
 namespace demonstration_layer
 {
-DemonstrationLayer::DemonstrationLayer() : new_demonstration_(false)
+DemonstrationLayer::DemonstrationLayer() : new_demonstration_(false), min_cost_learned_(0)
 {
 }
 
@@ -61,6 +62,7 @@ void DemonstrationLayer::onInitialize()
 
   demo_sub_ = nh.subscribe("demo", 10, &DemonstrationLayer::demoCallback, this);
   state_feature_sub_ = private_nh.subscribe("state_feature", 10, &DemonstrationLayer::stateFeatureCallback, this);
+  clear_service_ = private_nh.advertiseService("clear", &DemonstrationLayer::clearCallback, this);
 
   ROS_INFO("MacroCell size: %i", macro_cell_size_);
   ROS_INFO("Learning rate: %f", MacroCell::learning_rate_);
@@ -102,6 +104,26 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
   *min_x = 0;
   *min_y = 0;
   mapToWorld(map_width_, map_height_, *max_x, *max_y);
+}
+
+bool DemonstrationLayer::clearCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response)
+{
+  update_mutex_.lock();
+
+  min_cost_learned_ = 0;
+
+  //auto it = macrocell_map_.begin();
+  //for (; it != macrocell_map_.end(); it++)
+  //{
+    //auto macrocell = it->second;
+    //macrocell->zeroAllWeights();
+  //}
+
+  macrocell_map_.clear();
+
+  update_mutex_.unlock();
+
+  return true;
 }
 
 void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::GoalDemo& msg)
@@ -160,7 +182,6 @@ void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Cost
     worldToMap(prev_pose.pose.position.x, prev_pose.pose.position.y, prev_mapx, prev_mapy);
     worldToMap(pose.pose.position.x, pose.pose.position.y, mapx, mapy);
 
-    ROS_INFO("%i,%i to %i,%i", prev_mapx, prev_mapy, mapx, mapy);
     LineIterator line(prev_mapx, prev_mapy, mapx, mapy);
     while (line.isValid())
     {
@@ -178,8 +199,6 @@ void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Cost
         macrocell_map_.insert(pair);
       }
 
-      ROS_INFO("updating cell (%i,%i) of macrocell (%i,%i) of size %i", line.getX(), line.getY(), macrocell_x, macrocell_y,
-          macro_cell_size_);
       macrocell->updateWeights(increase, underlying_map_cost, feature_vector);
       line.advance();
     }
@@ -194,7 +213,7 @@ void DemonstrationLayer::renormalizeLearnedCosts(int min_i, int max_i, int min_j
   {
     for (int i = min_i; i < max_i; i++)
     {
-      float cost = master_grid.getCost(i, j);
+      int cost = master_grid.getCost(i, j);
 
       // if the cell is part of a macrocell, calculate its cost based on the
       // features & weights. Also make sure we're basing this off recent data.
@@ -204,8 +223,19 @@ void DemonstrationLayer::renormalizeLearnedCosts(int min_i, int max_i, int min_j
       macroCellExists(mx, my, &macrocell);
       if (macrocell != nullptr)
       {
-        cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
-        ROS_INFO("%i,%i, %.3f", i, j, cost);
+        // don't overwrite these special values
+        if (cost != costmap_2d::NO_INFORMATION &&
+            cost != costmap_2d::LETHAL_OBSTACLE &&
+            cost != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+        {
+          double learned_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
+          cost = (int)learned_cost;
+        }
+      }
+
+      if (i == 25 && j == 25)
+      {
+        ROS_INFO(".%d", cost);
       }
 
       cached_costs_[i][j] = cost;
@@ -234,18 +264,28 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
       updateCellWeights(latest_demo_.odom_path, master_grid, feature_vector, true);
       updateCellWeights(latest_demo_.demo_path, master_grid, feature_vector, false);
     }
-
-    renormalizeLearnedCosts(min_i, max_i, min_j, max_j, master_grid);
   }
 
+  // TODO: for efficiency, find a way to not do this every time
+  renormalizeLearnedCosts(min_i, max_i, min_j, max_j, master_grid);
   for (int j = min_j; j < max_j; j++)
   {
     for (int i = min_i; i < max_i; i++)
     {
-      int cost = cached_costs_[i][j] + min_cost_learned_;
+      int cost = cached_costs_[i][j];
+      if (min_cost_learned_ < 0 &&
+          cost != costmap_2d::NO_INFORMATION &&
+          cost != costmap_2d::LETHAL_OBSTACLE &&
+          cost != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+      {
+        cost += std::abs(min_cost_learned_);
+        cost = std::min(std::max(cost, 0), 255);
+      }
 
-      // the min shouldn't matter but the max might
-      cost = std::min(std::max(cost, 0), 128);
+      if (i == 25 && j == 25)
+      {
+        ROS_INFO("%d", cost);
+      }
 
       master_grid.setCost(i, j, cost);
     }

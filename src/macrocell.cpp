@@ -4,7 +4,7 @@
 
 namespace demonstration_layer
 {
-double MacroCell::learning_rate_ = 1;
+double MacroCell::learning_rate_ = 10;
 
 // TODO: Consider passing in all the features
 // this whole class/message thing in general is still super shitty.
@@ -63,5 +63,18 @@ void MacroCell::updateWeights(bool increase, int underlying_map_cost,
 {
   double delta = increase ? MacroCell::learning_rate_ : -MacroCell::learning_rate_;
   goal_feature_.updateWeightForValue(feature_values.goal, delta);
+}
+
+void MacroCell::zeroAllWeights()
+{
+  x_feature_.zeroAllWeights();
+  y_feature_.zeroAllWeights();
+  theta_feature_.zeroAllWeights();
+  vx_feature_.zeroAllWeights();
+  vy_feature_.zeroAllWeights();
+  vtheta_feature_.zeroAllWeights();
+  stamp_feature_.zeroAllWeights();
+  goal_feature_.zeroAllWeights();
+
 }
 }
