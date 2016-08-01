@@ -18,19 +18,18 @@ class Feature
 {
 public:
   /** @brief initializes all weights to zero */
-  Feature(double min, double max, int bucket_count);
+  Feature(double bucket_size);
 
   /** @brief initializes all weights to to some value*/
-  Feature(double min, double max, int bucket_count, double initial_weight_for_new_buckets);
+  Feature(double bucket_size, double initial_weight_for_new_buckets);
 
   void updateWeightForValue(double feature_value, double delta);
   double costForValue(double feature_value);
 
 private:
   double initial_weight_for_new_buckets_;
-  double min_;
-  double max_;
-  int bucket_count_;
+  double bucket_size_;
+
   // the first is the weight, the second is the bias
   typedef std::pair<double, double> val_t;
   std::map<int, std::pair<double, double>> bucket_to_weight_map_;

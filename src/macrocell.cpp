@@ -12,15 +12,15 @@ MacroCell::MacroCell(unsigned int x, unsigned int y, unsigned int size)
   : x_(x)
   , y_(y)
   , size_(size)
-  , map_feature_(Feature(0, 128, 128, 128))     // map cost, initialize weights to 1
-  , x_feature_(Feature(-20, 20, 1000))        // meters, global frame
-  , y_feature_(Feature(-20, 20, 1000))        // meters, global frame
-  , theta_feature_(Feature(0, 2 * M_PI, 16))  // rad, global frame
-  , vx_feature_(Feature(0, 0.5, 10))          // meters/sec, global frame
-  , vy_feature_(Feature(0, 0.1, 10))          // meters/sec, global frame
-  , vtheta_feature_(Feature(0, 0.5, 10))      // rad/sec, global frame
-  , stamp_feature_(Feature(0, 24, 24))         // rad, global frame
-  , goal_feature_(Feature(0, 100, 100))         // 100 should be enough
+  , map_feature_(Feature(1, 1))     // map cost, initialize weights to 1
+  , x_feature_(Feature(0.1))        // meters, global frame
+  , y_feature_(Feature(0.1))        // meters, global frame
+  , theta_feature_(Feature(M_PI/8))  // rad, global frame
+  , vx_feature_(Feature(0.05))          // meters/sec, global frame
+  , vy_feature_(Feature(0.01))          // meters/sec, global frame
+  , vtheta_feature_(Feature(0.05))      // rad/sec, global frame
+  , stamp_feature_(Feature(1))         // hours
+  , goal_feature_(Feature(1))         // goal number
 {
 }
 
