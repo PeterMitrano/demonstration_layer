@@ -4,7 +4,7 @@
 
 namespace demonstration_layer
 {
-double MacroCell::learning_rate_ = 10;
+double MacroCell::learning_rate_ = 2;
 
 // TODO: Consider passing in all the features
 // this whole class/message thing in general is still super shitty.
@@ -42,6 +42,7 @@ double MacroCell::rawCostGivenFeatures(int underlying_map_cost, recovery_supervi
 double MacroCell::rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::GoalFeature feature_values)
 {
   double cost = 0;
+  cost += map_feature_.costForValue(underlying_map_cost);
   cost += goal_feature_.costForValue(feature_values.goal);
 
   // remember, this isn't normalized at all... so have fun!
@@ -62,6 +63,7 @@ void MacroCell::updateWeights(bool increase, int underlying_map_cost,
                               recovery_supervisor_msgs::GoalFeature feature_values)
 {
   double delta = increase ? MacroCell::learning_rate_ : -MacroCell::learning_rate_;
+  map_feature_.updateWeightForValue(underlying_map_cost, delta);
   goal_feature_.updateWeightForValue(feature_values.goal, delta);
 }
 

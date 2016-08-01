@@ -109,20 +109,8 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
 bool DemonstrationLayer::clearCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response)
 {
   update_mutex_.lock();
-
-  min_cost_learned_ = 0;
-
-  //auto it = macrocell_map_.begin();
-  //for (; it != macrocell_map_.end(); it++)
-  //{
-    //auto macrocell = it->second;
-    //macrocell->zeroAllWeights();
-  //}
-
   macrocell_map_.clear();
-
   update_mutex_.unlock();
-
   return true;
 }
 
@@ -209,6 +197,7 @@ void DemonstrationLayer::renormalizeLearnedCosts(int min_i, int max_i, int min_j
                                                  costmap_2d::Costmap2D& master_grid)
 {
   // First normalize the costs so they're between 0 and 128
+  min_cost_learned_ = 0;
   for (int j = min_j; j < max_j; j++)
   {
     for (int i = min_i; i < max_i; i++)
@@ -231,11 +220,6 @@ void DemonstrationLayer::renormalizeLearnedCosts(int min_i, int max_i, int min_j
           double learned_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
           cost = (int)learned_cost;
         }
-      }
-
-      if (i == 25 && j == 25)
-      {
-        ROS_INFO(".%d", cost);
       }
 
       cached_costs_[i][j] = cost;
@@ -273,6 +257,11 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
     for (int i = min_i; i < max_i; i++)
     {
       int cost = cached_costs_[i][j];
+      if (i == 75 && j == 56)
+      {
+        ROS_INFO("raw %d", master_grid.getCost(i,j));
+        ROS_INFO("before %d", cost);
+      }
       if (min_cost_learned_ < 0 &&
           cost != costmap_2d::NO_INFORMATION &&
           cost != costmap_2d::LETHAL_OBSTACLE &&
@@ -282,9 +271,9 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
         cost = std::min(std::max(cost, 0), 255);
       }
 
-      if (i == 25 && j == 25)
+      if (i == 75 && j == 56)
       {
-        ROS_INFO("%d", cost);
+        ROS_INFO("after %d", cost);
       }
 
       master_grid.setCost(i, j, cost);
