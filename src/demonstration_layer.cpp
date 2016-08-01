@@ -35,7 +35,7 @@ void DemonstrationLayer::onInitialize()
     double feature_timeout_tmp;
     private_nh.param<double>("learning_rate", MacroCell::learning_rate_, 0.1);
     private_nh.param<int>("macro_cell_size", macro_cell_size_tmp, 4);
-    private_nh.param<double>("feature_timeout", feature_timeout_tmp, 1);  // seconds
+    private_nh.param<double>("feature_timeout", feature_timeout_tmp, 2);  // seconds
 
     if (feature_timeout_tmp <= 0)
     {
@@ -101,8 +101,9 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
 
   // for nwe we update everything. Eventually this should be based on which
   // macrocells receieve demonstrations and other fancy stuff.
-  *min_x = 0;
-  *min_y = 0;
+  Costmap2D* master = layered_costmap_->getCostmap();
+  *min_x = master->getOriginX();
+  *min_y = master->getOriginY();
   mapToWorld(map_width_, map_height_, *max_x, *max_y);
 }
 
