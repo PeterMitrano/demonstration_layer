@@ -115,7 +115,7 @@ bool DemonstrationLayer::clearCallback(std_srvs::EmptyRequest& request, std_srvs
   return true;
 }
 
-void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::GoalDemo& msg)
+void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::PosTimeGoalDemo& msg)
 {
   ROS_INFO_ONCE("Demos are being recieved");
 
@@ -127,7 +127,7 @@ void DemonstrationLayer::demoCallback(const recovery_supervisor_msgs::GoalDemo& 
   update_mutex_.unlock();
 }
 
-void DemonstrationLayer::stateFeatureCallback(const recovery_supervisor_msgs::GoalFeature& msg)
+void DemonstrationLayer::stateFeatureCallback(const recovery_supervisor_msgs::PosTimeGoalFeature& msg)
 {
   ROS_INFO_ONCE("State features are being recieved");
   update_mutex_.lock();
@@ -156,7 +156,7 @@ void DemonstrationLayer::macroCellExists(int x, int y, MacroCell** output)
 }
 
 void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
-                                           recovery_supervisor_msgs::GoalFeature feature_vector, bool increase)
+                                           recovery_supervisor_msgs::PosTimeGoalFeature feature_vector, bool increase)
 {
   // iterate over cells in the odom path that aren't in demo path.
   // we want to increase the weights by some fraction LEARNING_RATE_ of their inputs
@@ -237,7 +237,7 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
   {
     new_demonstration_ = false;
 
-    for (recovery_supervisor_msgs::GoalFeature feature_vector : latest_demo_.feature_values)
+    for (recovery_supervisor_msgs::PosTimeGoalFeature feature_vector : latest_demo_.feature_values)
     {
       updateCellWeights(latest_demo_.odom_path, master_grid, feature_vector, true);
       updateCellWeights(latest_demo_.demo_path, master_grid, feature_vector, false);

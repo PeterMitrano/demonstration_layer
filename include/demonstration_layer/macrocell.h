@@ -4,7 +4,7 @@
 
 #include <gtest/gtest_prod.h>
 #include <recovery_supervisor_msgs/GoalFeature.h>
-#include <recovery_supervisor_msgs/XYThetaFeature.h>
+#include <recovery_supervisor_msgs/PosTimeGoalFeature.h>
 #include <vector>
 
 namespace demonstration_layer
@@ -25,10 +25,10 @@ public:
   /** @brief computes the linear combination of weights
    * and values for features of a given state
    */
-  double rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::XYThetaFeature feature_values);
+  double rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::PosTimeGoalFeature feature_values);
   double rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::GoalFeature feature_values);
 
-  void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::XYThetaFeature feature_values);
+  void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::PosTimeGoalFeature feature_values);
   void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::GoalFeature feature_values);
 
   void zeroAllWeights();
@@ -42,7 +42,6 @@ private:
   Feature goal_feature_;
 
   FRIEND_TEST(MacroCellTest, InitializeTest);
-  FRIEND_TEST(MacroCellTest, LearnBigXIsGood);
-  FRIEND_TEST(MacroCellTest, RandZerosWeight);
+  FRIEND_TEST(MacroCellTest, LearnDoorScenario);
 };
 }

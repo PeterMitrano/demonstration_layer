@@ -11,8 +11,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
 #include <recovery_supervisor_msgs/GoalDemo.h>
-#include <recovery_supervisor_msgs/XYThetaDemo.h>
-#include <recovery_supervisor_msgs/XYThetaFeature.h>
+#include <recovery_supervisor_msgs/PosTimeGoalDemo.h>
+#include <recovery_supervisor_msgs/PosTimeGoalFeature.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
@@ -74,8 +74,8 @@ private:
   /** @brief recieves feature vectors representing the current state */
   ros::Subscriber state_feature_sub_;
 
-  recovery_supervisor_msgs::GoalFeature latest_feature_values_;
-  recovery_supervisor_msgs::GoalDemo latest_demo_;
+  recovery_supervisor_msgs::PosTimeGoalFeature latest_feature_values_;
+  recovery_supervisor_msgs::PosTimeGoalDemo latest_demo_;
 
   // container for macrocells. When we get a demo, we need to find or create
   // the macrocells for various poses. So since we only ever lookup macrocells,
@@ -85,14 +85,14 @@ private:
   std::map<key_t, MacroCell*> macrocell_map_;
 
   bool clearCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response);
-  void demoCallback(const recovery_supervisor_msgs::GoalDemo& msg);
+  void demoCallback(const recovery_supervisor_msgs::PosTimeGoalDemo& msg);
   void macroCellExists(int x, int y, MacroCell** output);
   void reconfigureCB(demonstration_layer::DemonstrationLayerConfig& config, uint32_t level);
   void renormalizeLearnedCosts(int min_i, int max_i, int min_j, int max_j, costmap_2d::Costmap2D& master_grid);
-  void stateFeatureCallback(const recovery_supervisor_msgs::GoalFeature& msg);
+  void stateFeatureCallback(const recovery_supervisor_msgs::PosTimeGoalFeature& msg);
 
   /** @brief updates the weights for all the macrocells along a path, given a set of feature values */
   void updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
-                         recovery_supervisor_msgs::GoalFeature feature_vector, bool increase);
+                         recovery_supervisor_msgs::PosTimeGoalFeature feature_vector, bool increase);
 };
 }
