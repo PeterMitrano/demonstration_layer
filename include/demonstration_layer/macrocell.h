@@ -37,13 +37,7 @@ private:
   unsigned int x_;     // starting x in map frame
   unsigned int y_;     // starting y in map frame
   unsigned int size_;  // width and height in number of cells
-  Feature map_feature_;
-  Feature x_feature_;
-  Feature y_feature_;
-  Feature theta_feature_;
-  Feature vx_feature_;
-  Feature vy_feature_;
-  Feature vtheta_feature_;
+  Feature xytheta_feature_;
   Feature stamp_feature_;
   Feature goal_feature_;
 

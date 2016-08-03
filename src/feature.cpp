@@ -3,73 +3,74 @@
 
 namespace demonstration_layer
 {
-Feature::Feature(double bucket_size, double initial_weight_for_new_buckets)
-  : initial_weight_for_new_buckets_(initial_weight_for_new_buckets), bucket_size_(bucket_size) {}
 
-Feature::Feature(double bucket_size) : Feature(bucket_size, 0)
+Feature::Feature(std::vector<double> bucket_size) : bucket_size_(bucket_size)
 {
 }
 
-int Feature::bucketIndexForValue(double feature_value)
+Feature::Feature(double bucket_size) : Feature(std::vector<double>{bucket_size})
 {
-  return feature_value / bucket_size_;
+}
+
+std::vector<int> Feature::bucketIndecesForValue(double feature_value)
+{
+  return bucketIndecesForValue(std::vector<double>{feature_value});
+}
+
+std::vector<int> Feature::bucketIndecesForValue(std::vector<double> feature_value)
+{
+  std::vector<int> indeces;
+  indeces.reserve(feature_value.size());
+
+  for (size_t i = 0; i < feature_value.size(); i++)
+  {
+    indeces.push_back(feature_value[i] / bucket_size_[i]);
+  }
+
+  return indeces;
 }
 
 double Feature::costForValue(double feature_value)
 {
-  int bucket_index = bucketIndexForValue(feature_value);
-  auto weight = bucket_to_weight_map_.find(bucket_index);
+  return costForValue(std::vector<double>{feature_value});
+}
+
+double Feature::costForValue(std::vector<double> feature_value)
+{
+  std::vector<int> bucket_indeces = bucketIndecesForValue(feature_value);
+  auto weight = bucket_to_weight_map_.find(bucket_indeces);
 
   if (weight == bucket_to_weight_map_.end())
   {
-    return feature_value * initial_weight_for_new_buckets_;
+    return 0;
   }
   else
   {
-    // cost = feature_value * weight + bias
-    double cost = feature_value * weight->second.first + weight->second.second;
+    double cost = weight->second;
     return cost;
   }
 }
 
 void Feature::updateWeightForValue(double feature_value, double delta)
 {
-  int bucket_index = bucketIndexForValue(feature_value);
-  auto weight = bucket_to_weight_map_.find(bucket_index);
-  if (weight == bucket_to_weight_map_.end())
-  {
-    std::pair<int, val_t> new_mapping;
-    val_t new_value;
-    new_mapping.first = bucket_index;
-
-    new_value.first = initial_weight_for_new_buckets_ + (delta * feature_value);
-
-    // new biases start at 0, and 0 + delta = delta
-    // so the bias just start at delta
-    new_value.second = delta;
-
-    new_mapping.second = new_value;
-
-    bucket_to_weight_map_.insert(new_mapping);
-  }
-  else
-  {
-    weight->second.first += delta * feature_value;
-    weight->second.second += delta;
-  }
+  updateWeightForValue(std::vector<double>{feature_value}, delta);
 }
 
-Feature::val_t Feature::weightForValue(double feature_value)
+void Feature::updateWeightForValue(std::vector<double> feature_value, double delta)
 {
-  int bucket_index = bucketIndexForValue(feature_value);
-  auto weight = bucket_to_weight_map_.find(bucket_index);
+  std::vector<int> bucket_indeces = bucketIndecesForValue(feature_value);
+  auto weight = bucket_to_weight_map_.find(bucket_indeces);
   if (weight == bucket_to_weight_map_.end())
   {
-    return val_t(0, 0);
+    std::pair<key_t, double> new_weight;
+    new_weight.first = bucket_indeces;
+
+    new_weight.second = delta;
+    bucket_to_weight_map_.insert(new_weight);
   }
   else
   {
-    return weight->second;
+    weight->second += delta;
   }
 }
 

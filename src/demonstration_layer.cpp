@@ -213,14 +213,7 @@ void DemonstrationLayer::renormalizeLearnedCosts(int min_i, int max_i, int min_j
       macroCellExists(mx, my, &macrocell);
       if (macrocell != nullptr)
       {
-        // don't overwrite these special values
-        if (cost != costmap_2d::NO_INFORMATION &&
-            cost != costmap_2d::LETHAL_OBSTACLE &&
-            cost != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
-        {
-          double learned_cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
-          cost = (int)learned_cost;
-        }
+        cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
       }
 
       cached_costs_[i][j] = cost;
@@ -257,27 +250,25 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
   {
     for (int i = min_i; i < max_i; i++)
     {
-      int cost = cached_costs_[i][j];
-      if (i == 75 && j == 56)
-      {
-        ROS_INFO("raw %d", master_grid.getCost(i,j));
-        ROS_INFO("before %d", cost);
-      }
-      if (min_cost_learned_ < 0 &&
-          cost != costmap_2d::NO_INFORMATION &&
-          cost != costmap_2d::LETHAL_OBSTACLE &&
-          cost != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
-      {
-        cost += std::abs(min_cost_learned_);
-        cost = std::min(std::max(cost, 0), 255);
-      }
+      int underlying_map_cost = master_grid.getCost(i, j);
 
-      if (i == 75 && j == 56)
+      if (underlying_map_cost == costmap_2d::LETHAL_OBSTACLE || underlying_map_cost == costmap_2d::NO_INFORMATION ||
+          underlying_map_cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
       {
-        ROS_INFO("after %d", cost);
+        master_grid.setCost(i, j, underlying_map_cost);
       }
+      else
+      {
+        int cost = cached_costs_[i][j];
 
-      master_grid.setCost(i, j, cost);
+        if (min_cost_learned_ < 0)
+        {
+          cost += std::abs(min_cost_learned_);
+        }
+
+        cost = std::min(std::max(cost, 0), 254);
+        master_grid.setCost(i, j, cost);
+      }
     }
   }
   update_mutex_.unlock();

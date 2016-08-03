@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gtest/gtest_prod.h>
+#include <vector>
 #include <map>
 
 namespace demonstration_layer
@@ -18,25 +19,26 @@ class Feature
 {
 public:
   /** @brief initializes all weights to zero */
+  Feature(std::vector<double> bucket_size);
   Feature(double bucket_size);
 
-  /** @brief initializes all weights to to some value*/
-  Feature(double bucket_size, double initial_weight_for_new_buckets);
+  void updateWeightForValue(std::vector<double> feature_value, double delta);
+  double costForValue(std::vector<double> feature_value);
 
   void updateWeightForValue(double feature_value, double delta);
   double costForValue(double feature_value);
+
   void zeroAllWeights();
 
 private:
-  double initial_weight_for_new_buckets_;
-  double bucket_size_;
+  std::vector<double> bucket_size_;
 
-  // the first is the weight, the second is the bias
-  typedef std::pair<double, double> val_t;
-  std::map<int, std::pair<double, double>> bucket_to_weight_map_;
+  // the first is the weight
+  typedef std::vector<int> key_t;
+  std::map<key_t, double> bucket_to_weight_map_;
 
-  int bucketIndexForValue(double feature_value);
-  val_t weightForValue(double feature_value);
+  std::vector<int> bucketIndecesForValue(std::vector<double> feature_value);
+  std::vector<int> bucketIndecesForValue(double feature_value);
 
   FRIEND_TEST(FeatureTest, BucketIndexTest);
   FRIEND_TEST(FeatureTest, InitializeWeightTest);
