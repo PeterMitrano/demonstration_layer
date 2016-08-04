@@ -11,6 +11,23 @@ Feature::Feature(double bucket_size) : Feature(std::vector<double>{bucket_size})
 {
 }
 
+std::vector<demonstration_layer_msgs::BucketWeight> Feature::bucketsMsg()
+{
+  std::vector<demonstration_layer_msgs::BucketWeight> buckets;
+
+  for (auto element : bucket_to_weight_map_)
+  {
+    std::vector<int> bucket_indeces = element.first;
+    auto weight = element.second;
+    demonstration_layer_msgs::BucketWeight bucket_msg;
+    bucket_msg.bucket_indeces = bucket_indeces;
+    bucket_msg.weight = weight;
+    buckets.push_back(bucket_msg);
+  }
+
+  return buckets;
+}
+
 std::vector<int> Feature::bucketIndecesForValue(double feature_value)
 {
   return bucketIndecesForValue(std::vector<double>{feature_value});
@@ -46,7 +63,6 @@ double Feature::costForValue(std::vector<double> feature_value)
   else
   {
     double cost = weight->second;
-    ROS_INFO("cost:%f", cost);
     return cost;
   }
 }
@@ -67,12 +83,10 @@ void Feature::updateWeightForValue(std::vector<double> feature_value, double del
 
     new_weight.second = delta;
     bucket_to_weight_map_.insert(new_weight);
-    ROS_INFO("weight:%f", delta);
   }
   else
   {
     weight->second += delta;
-    ROS_INFO("weight:%f", weight->second);
   }
 }
 

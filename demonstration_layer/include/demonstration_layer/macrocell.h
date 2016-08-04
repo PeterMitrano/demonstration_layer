@@ -2,6 +2,7 @@
 
 #include "demonstration_layer/feature.h"
 
+#include <demonstration_layer_msgs/FeatureWeight.h>
 #include <gtest/gtest_prod.h>
 #include <recovery_supervisor_msgs/GoalFeature.h>
 #include <recovery_supervisor_msgs/PosTimeGoalFeature.h>
@@ -28,9 +29,15 @@ public:
   double rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::PosTimeGoalFeature feature_values);
   double rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::GoalFeature feature_values);
 
+  std::vector<demonstration_layer_msgs::FeatureWeight> weightsMsg();
+
   void updateWeights(bool increase, int underlying_map_cost,
                      recovery_supervisor_msgs::PosTimeGoalFeature feature_values);
   void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::GoalFeature feature_values);
+
+  unsigned int getSize();
+  unsigned int getX();
+  unsigned int getY();
 
   void zeroAllWeights();
 

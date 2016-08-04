@@ -18,6 +18,44 @@ MacroCell::MacroCell(unsigned int x, unsigned int y, unsigned int size)
 {
 }
 
+std::vector<demonstration_layer_msgs::FeatureWeight> MacroCell::weightsMsg()
+{
+  std::vector<demonstration_layer_msgs::FeatureWeight> weights;
+
+  demonstration_layer_msgs::FeatureWeight xytheta_msg;
+  xytheta_msg.name = "xytheta";
+  xytheta_msg.buckets = xytheta_feature_.bucketsMsg();
+
+  demonstration_layer_msgs::FeatureWeight stamp_msg;
+  stamp_msg.name = "stamp";
+  stamp_msg.buckets = stamp_feature_.bucketsMsg();
+
+  demonstration_layer_msgs::FeatureWeight goal_msg;
+  goal_msg.name = "goal";
+  goal_msg.buckets = goal_feature_.bucketsMsg();
+
+  weights.push_back(xytheta_msg);
+  weights.push_back(stamp_msg);
+  weights.push_back(goal_msg);
+
+  return weights;
+}
+
+unsigned int MacroCell::getSize()
+{
+  return size_;
+}
+
+unsigned int MacroCell::getX()
+{
+  return x_;
+}
+
+unsigned int MacroCell::getY()
+{
+  return y_;
+}
+
 /** @brief computes the linear combination of weights
  * and values for features of a given state
  */

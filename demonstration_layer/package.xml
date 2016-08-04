@@ -11,6 +11,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>costmap_2d</depend>
+  <depend>demonstration_layer_msgs</depend>
   <depend>dynamic_reconfigure</depend>
   <depend>nav_msgs</depend>
   <depend>recovery_supervisor_msgs</depend>

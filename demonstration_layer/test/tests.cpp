@@ -1,9 +1,10 @@
-#include <gtest/gtest.h>
-#include <recovery_supervisor_msgs/GoalFeature.h>
-#include <recovery_supervisor_msgs/PosTimeGoalFeature.h>
+#include "demonstration_layer/demonstration_layer.h"
 #include "demonstration_layer/feature.h"
 #include "demonstration_layer/macrocell.h"
 
+#include <gtest/gtest.h>
+#include <recovery_supervisor_msgs/GoalFeature.h>
+#include <recovery_supervisor_msgs/PosTimeGoalFeature.h>
 #include <ros/ros.h>
 #include <cmath>
 #include <cstdio>
@@ -12,14 +13,19 @@ namespace demonstration_layer
 {
 const float TEST_LEARNING_RATE = 0.1;
 
-int randInt(int lo, int hi)
-{
-  return (int)(lo + ((hi - lo) * rand() / RAND_MAX));
-}
-
 float randFlt(float lo, float hi)
 {
   return (lo + ((hi - lo) * rand() / RAND_MAX));
+}
+
+int randInt(int lo, int hi)
+{
+  return (int)(randFlt(lo, hi) + 0.5);
+}
+
+bool randBool()
+{
+  return (bool)randInt(0,1);
 }
 
 TEST(FeatureTest, BucketIndexTest)
@@ -151,6 +157,54 @@ TEST(MacroCellTest, LearnDoorScenario)
   EXPECT_GT(bad_cell.rawCostGivenFeatures(initial_map_cost, goal_f), initial_cost);
   EXPECT_FLOAT_EQ(bad_cell.rawCostGivenFeatures(initial_map_cost, some_other_f), initial_cost);
   EXPECT_FLOAT_EQ(bad_cell.rawCostGivenFeatures(initial_map_cost, some_other_f2), initial_cost);
+}
+
+TEST(WeightsMsgTest, WeightsMsgTest)
+{
+  std::map<DemonstrationLayer::key_t, MacroCell *> map;
+
+  // create a bunch of macrocells in various places
+  const int num_cells = 10;
+  for (int i = 0; i < num_cells; i++)
+  {
+    int x = randFlt(-20, 20);
+    int y = randFlt(-20, 20);
+
+    // size doesn't rly matter
+    MacroCell *macrocell = new MacroCell(x, y, 1);
+
+    // do some updates so there are some non-zero weights
+    for (int i = 0; i < 10; i++ )
+    {
+      recovery_supervisor_msgs::PosTimeGoalFeature feature;
+      feature.x = randFlt(-20, 20);
+      feature.y = randFlt(-20, 20);
+      feature.theta = randFlt(-M_PI, M_PI);
+      feature.goal = randInt(0,20);
+      feature.hour = randInt(0,24);
+
+      bool increase = randBool();
+      macrocell->updateWeights(increase, 0, feature);
+    }
+
+    std::pair<DemonstrationLayer::key_t, MacroCell*> element;
+    element.first = std::pair<int, int>(x, y);
+    element.second = macrocell;
+    map.insert(element);
+  }
+
+  demonstration_layer_msgs::Weights msg = DemonstrationLayer::buildWeightsMsg(map);
+  EXPECT_EQ(msg.cells.size(), num_cells);
+  for (auto cell : msg.cells)
+  {
+    // should match number of features we use
+    ASSERT_EQ(cell.weights.size(), 3);
+    for (auto weight : cell.weights)
+    {
+      EXPECT_STRNE(weight.name.c_str(), "");
+      EXPECT_STRNE(weight.name.c_str(), NULL);
+    }
+  }
 }
 }
 

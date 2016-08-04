@@ -1,5 +1,6 @@
 #include <demonstration_layer/demonstration_layer.h>
 #include <demonstration_layer/line_iterator.h>
+#include <demonstration_layer_msgs/MacroCellWeight.h>
 #include <pluginlib/class_list_macros.h>
 
 #include <algorithm>
@@ -59,6 +60,8 @@ void DemonstrationLayer::onInitialize()
   dynamic_reconfigure::Server<DemonstrationLayerConfig>::CallbackType cb;
   cb = boost::bind(&DemonstrationLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
+
+  weights_pub_ = private_nh.advertise<demonstration_layer_msgs::Weights>("weights", 10, true);
 
   demo_sub_ = nh.subscribe("demo", 10, &DemonstrationLayer::demoCallback, this);
   state_feature_sub_ = private_nh.subscribe("state_feature", 10, &DemonstrationLayer::stateFeatureCallback, this);
@@ -155,6 +158,22 @@ void DemonstrationLayer::macroCellExists(int x, int y, MacroCell** output)
   }
 }
 
+demonstration_layer_msgs::Weights DemonstrationLayer::buildWeightsMsg(std::map<key_t, MacroCell*> macrocell_map_)
+{
+  demonstration_layer_msgs::Weights msg;
+  for (const auto pair : macrocell_map_)
+  {
+    const auto macrocell = pair.second;
+    demonstration_layer_msgs::MacroCellWeight cell;
+    cell.x = macrocell->getX();
+    cell.y = macrocell->getY();
+    cell.size = macrocell->getSize();
+    cell.weights = macrocell->weightsMsg();
+    msg.cells.push_back(cell);
+  }
+  return msg;
+}
+
 void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
                                            recovery_supervisor_msgs::PosTimeGoalFeature feature_vector, bool increase)
 {
@@ -213,7 +232,7 @@ void DemonstrationLayer::renormalizeLearnedCosts(int min_i, int max_i, int min_j
       macroCellExists(mx, my, &macrocell);
       if (macrocell != nullptr)
       {
-        //blindly cast to int! hooray!
+        // blindly cast to int! hooray!
         cost = (int)macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
       }
 
@@ -242,6 +261,7 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
     {
       updateCellWeights(latest_demo_.odom_path, master_grid, feature_vector, true);
       updateCellWeights(latest_demo_.demo_path, master_grid, feature_vector, false);
+      weights_pub_.publish(DemonstrationLayer::buildWeightsMsg(macrocell_map_));
     }
   }
 

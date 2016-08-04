@@ -1,5 +1,6 @@
 #pragma once
 
+#include <demonstration_layer_msgs/BucketWeight.h>
 #include <gtest/gtest_prod.h>
 #include <map>
 #include <vector>
@@ -21,6 +22,8 @@ public:
   /** @brief initializes all weights to zero */
   Feature(std::vector<double> bucket_size);
   Feature(double bucket_size);
+
+  std::vector<demonstration_layer_msgs::BucketWeight> bucketsMsg();
 
   void updateWeightForValue(std::vector<double> feature_value, double delta);
   double costForValue(std::vector<double> feature_value);
