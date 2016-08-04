@@ -4,7 +4,7 @@
 
 namespace demonstration_layer
 {
-double MacroCell::learning_rate_ = 2;
+double MacroCell::learning_rate_ = 1;
 
 // TODO: Consider passing in all the features
 // this whole class/message thing in general is still super shitty.
@@ -21,7 +21,8 @@ MacroCell::MacroCell(unsigned int x, unsigned int y, unsigned int size)
 /** @brief computes the linear combination of weights
  * and values for features of a given state
  */
-double MacroCell::rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::PosTimeGoalFeature feature_values)
+double MacroCell::rawCostGivenFeatures(int underlying_map_cost,
+                                       recovery_supervisor_msgs::PosTimeGoalFeature feature_values)
 {
   double cost = underlying_map_cost;
   cost += xytheta_feature_.costForValue(std::vector<double>{feature_values.x, feature_values.y, feature_values.theta});
@@ -41,9 +42,8 @@ void MacroCell::updateWeights(bool increase, int underlying_map_cost,
                               recovery_supervisor_msgs::PosTimeGoalFeature feature_values)
 {
   double delta = increase ? MacroCell::learning_rate_ : -MacroCell::learning_rate_;
-  xytheta_feature_.updateWeightForValue(
-      std::vector<double>{feature_values.x, feature_values.y, feature_values.theta},
-      delta);
+  xytheta_feature_.updateWeightForValue(std::vector<double>{feature_values.x, feature_values.y, feature_values.theta},
+                                        delta);
   goal_feature_.updateWeightForValue(feature_values.goal, delta);
   stamp_feature_.updateWeightForValue(feature_values.hour, delta);
 }

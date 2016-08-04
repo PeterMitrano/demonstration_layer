@@ -213,7 +213,8 @@ void DemonstrationLayer::renormalizeLearnedCosts(int min_i, int max_i, int min_j
       macroCellExists(mx, my, &macrocell);
       if (macrocell != nullptr)
       {
-        cost = macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
+        //blindly cast to int! hooray!
+        cost = (int)macrocell->rawCostGivenFeatures(cost, latest_feature_values_);
       }
 
       cached_costs_[i][j] = cost;

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <gtest/gtest_prod.h>
-#include <vector>
 #include <map>
+#include <vector>
 
 namespace demonstration_layer
 {

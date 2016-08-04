@@ -28,7 +28,8 @@ public:
   double rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::PosTimeGoalFeature feature_values);
   double rawCostGivenFeatures(int underlying_map_cost, recovery_supervisor_msgs::GoalFeature feature_values);
 
-  void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::PosTimeGoalFeature feature_values);
+  void updateWeights(bool increase, int underlying_map_cost,
+                     recovery_supervisor_msgs::PosTimeGoalFeature feature_values);
   void updateWeights(bool increase, int underlying_map_cost, recovery_supervisor_msgs::GoalFeature feature_values);
 
   void zeroAllWeights();

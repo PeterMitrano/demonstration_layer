@@ -3,7 +3,6 @@
 
 namespace demonstration_layer
 {
-
 Feature::Feature(std::vector<double> bucket_size) : bucket_size_(bucket_size)
 {
 }
@@ -47,6 +46,7 @@ double Feature::costForValue(std::vector<double> feature_value)
   else
   {
     double cost = weight->second;
+    ROS_INFO("cost:%f", cost);
     return cost;
   }
 }
@@ -67,10 +67,12 @@ void Feature::updateWeightForValue(std::vector<double> feature_value, double del
 
     new_weight.second = delta;
     bucket_to_weight_map_.insert(new_weight);
+    ROS_INFO("weight:%f", delta);
   }
   else
   {
     weight->second += delta;
+    ROS_INFO("weight:%f", weight->second);
   }
 }
 
