@@ -5,8 +5,8 @@ from sensor_msgs.msg import Joy
 from std_msgs.msg import Bool
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import PoseStamped
-from recovery_supervisor_msgs.msg import GoalDemo
-from recovery_supervisor_msgs.msg import GoalFeature
+from recovery_supervisor_msgs.msg import PosTimeGoalFeature
+from recovery_supervisor_msgs.msg import PosTimeGoalDemo
 from nav_msgs.msg import Path
 
 class FakeDemoInput:
@@ -20,7 +20,7 @@ class FakeDemoInput:
 
   showing_demo_path_ = False
   latest_path_ = Path()
-  demo_msg_ = GoalDemo()
+  demo_msg_ = PosTimeGoalDemo()
 
   def __init__(self):
     rospy.init_node("fake_demo_input")
@@ -28,7 +28,7 @@ class FakeDemoInput:
     path_sub = rospy.Subscriber("points_to_path/path", Path, self.pathCallback)
 
     self.demo_status_pub_ = rospy.Publisher("recovery_supervisor/demonstration_status", Bool, queue_size=10)
-    self.demo_pub_ = rospy.Publisher("demo", GoalDemo, queue_size=10)
+    self.demo_pub_ = rospy.Publisher("demo", PosTimeGoalDemo, queue_size=10)
 
     self.printUsage()
 
@@ -47,8 +47,6 @@ class FakeDemoInput:
       rospy.logerr("Not enough buttons. I need buttons 6 & 7")
       return
 
-    print msg.buttons
-
     if msg.buttons[4]: # publish the demo msg!
       self.demo_pub_.publish(self.demo_msg_)
 
@@ -57,13 +55,14 @@ class FakeDemoInput:
       self.demo_msg_.feature_values = []
 
       print "Waiting for input..."
-
-      try:
-        feat = GoalFeature()
-        feat.goal = int(raw_input())
-        self.demo_msg_.feature_values.append(feat)
-      except ValueError:
-        rospy.loginfo("You must enter one integer")
+      feat = PosTimeGoalFeature()
+      feat.x = float(raw_input("x: "))
+      feat.y = float(raw_input("y: "))
+      feat.theta = float(raw_input("theta: "))
+      feat.goal = int(raw_input("goal: "))
+      feat.hour = int(raw_input("hour: "))
+      print "Complete."
+      self.demo_msg_.feature_values.append(feat)
 
     if msg.buttons[6]: # start of a new demo path
       self.showing_demo_path_ = True
