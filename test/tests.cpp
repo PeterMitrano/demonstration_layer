@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include "demonstration_layer/feature.h"
-#include "demonstration_layer/macrocell.h"
 #include <recovery_supervisor_msgs/GoalFeature.h>
 #include <recovery_supervisor_msgs/PosTimeGoalFeature.h>
+#include "demonstration_layer/feature.h"
+#include "demonstration_layer/macrocell.h"
 
 #include <ros/ros.h>
 #include <cmath>
@@ -14,12 +14,12 @@ const float TEST_LEARNING_RATE = 0.1;
 
 int randInt(int lo, int hi)
 {
-  return (int)(lo + ((hi - lo) * rand()/RAND_MAX));
+  return (int)(lo + ((hi - lo) * rand() / RAND_MAX));
 }
 
 float randFlt(float lo, float hi)
 {
-  return (lo + ((hi - lo) * rand()/RAND_MAX));
+  return (lo + ((hi - lo) * rand() / RAND_MAX));
 }
 
 TEST(FeatureTest, BucketIndexTest)
@@ -85,14 +85,14 @@ TEST(MacroCellTest, InitializeTest)
   srand(seed);
 
   // weights start at zero, so outpout should be map cost
-  for (int map_cost=0; map_cost < 256; map_cost++)
+  for (int map_cost = 0; map_cost < 256; map_cost++)
   {
     recovery_supervisor_msgs::PosTimeGoalFeature f;
-    f.x = randFlt(-10,10);
-    f.y = randFlt(-10,10);
+    f.x = randFlt(-10, 10);
+    f.y = randFlt(-10, 10);
     f.theta = randFlt(-M_PI, M_PI);
-    f.goal = randInt(0,20);
-    f.hour = randInt(0,24);
+    f.goal = randInt(0, 20);
+    f.hour = randInt(0, 24);
 
     EXPECT_FLOAT_EQ(map_cost, cell.rawCostGivenFeatures(map_cost, f));
   }
@@ -100,9 +100,9 @@ TEST(MacroCellTest, InitializeTest)
 
 TEST(MacroCellTest, LearnDoorScenario)
 {
-  //the test here is to learn that the cell in front of a door
-  //is worse when your goal is through that door
-  MacroCell bad_cell(0,0, 1);
+  // the test here is to learn that the cell in front of a door
+  // is worse when your goal is through that door
+  MacroCell bad_cell(0, 0, 1);
 
   // bad_cell is one of the cells that needs higher cost
   // when we are going through the door. "going through the door"
@@ -126,7 +126,6 @@ TEST(MacroCellTest, LearnDoorScenario)
   some_other_f2.x = 9;
   some_other_f2.goal = 3;
   some_other_f2.hour = 2;
-
 
   // these features are similiar to the learned feature but differ slightly
   recovery_supervisor_msgs::PosTimeGoalFeature x_f(going_through_door_f);
