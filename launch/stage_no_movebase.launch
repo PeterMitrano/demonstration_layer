@@ -72,7 +72,5 @@
 
   <!--  **************** Visualisation ****************  -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find demonstration_layer)/rviz/demonstration_layer.rviz"/>
-
-  <include file="$(find turtlebot_navigation)/launch/includes/velocity_smoother.launch.xml"/>
-  <include file="$(find turtlebot_navigation)/launch/includes/safety_controller.launch.xml"/>
+  <include file="$(find nav_points)/launch/stage.launch" />
 </launch>

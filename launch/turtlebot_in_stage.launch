@@ -75,4 +75,5 @@
 
   <!--  **************** Visualisation ****************  -->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find demonstration_layer)/rviz/demonstration_layer.rviz"/>
+  <include file="$(find nav_points)/launch/stage.launch" />
 </launch>

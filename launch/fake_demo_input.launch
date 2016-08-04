@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="joy" type="joy_node" name="joy" />
+  <node pkg="recovery_supervisor" type="points_to_path" name="points_to_path" />
+  <node pkg="demonstration_layer" type="fake_demo_input" name="fake_demo_input" output="screen" />
+</launch>
