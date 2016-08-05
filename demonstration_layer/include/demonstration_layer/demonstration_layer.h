@@ -8,6 +8,7 @@
 #include <demonstration_layer/DemonstrationLayerConfig.h>
 #include <demonstration_layer/demo_pose_stamped.h>
 #include <demonstration_layer_msgs/Weights.h>
+#include <demonstration_layer_msgs/Cost.h>
 #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
@@ -70,6 +71,7 @@ private:
   ros::Duration feature_timeout_;
   ros::Publisher weights_pub_;
   ros::ServiceServer clear_service_;
+  ros::ServiceServer cost_service_;
   ros::Subscriber demo_sub_;
   ros::Time latest_feature_time_;
 
@@ -89,6 +91,7 @@ private:
   // static so we can use it in tests without instantiating a DemonstrationLayer
   static demonstration_layer_msgs::Weights buildWeightsMsg(std::map<key_t, MacroCell*> macrocell_map_);
 
+  bool costCallback(demonstration_layer_msgs::CostRequest& request, demonstration_layer_msgs::CostResponse & response);
   bool clearCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response);
   void demoCallback(const recovery_supervisor_msgs::PosTimeGoalDemo& msg);
   void macroCellExists(int x, int y, MacroCell** output);

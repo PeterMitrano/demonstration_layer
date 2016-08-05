@@ -12,6 +12,9 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>recovery_supervisor_msgs</depend>
+  <depend>nav_msgs</depend>
+
   <build_depend>message_generation</build_depend>
 
   <exec_depend>message_runtime</exec_depend>

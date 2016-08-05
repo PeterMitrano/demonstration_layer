@@ -66,6 +66,7 @@ void DemonstrationLayer::onInitialize()
   demo_sub_ = nh.subscribe("demo", 10, &DemonstrationLayer::demoCallback, this);
   state_feature_sub_ = private_nh.subscribe("state_feature", 10, &DemonstrationLayer::stateFeatureCallback, this);
   clear_service_ = private_nh.advertiseService("clear", &DemonstrationLayer::clearCallback, this);
+  cost_service_ = private_nh.advertiseService("cost", &DemonstrationLayer::costCallback, this);
 
   ROS_INFO("MacroCell size: %i", macro_cell_size_);
   ROS_INFO("Learning rate: %f", MacroCell::learning_rate_);
@@ -108,6 +109,29 @@ void DemonstrationLayer::updateBounds(double robot_x, double robot_y, double rob
   *min_x = master->getOriginX();
   *min_y = master->getOriginY();
   mapToWorld(map_width_, map_height_, *max_x, *max_y);
+}
+
+bool DemonstrationLayer::costCallback(demonstration_layer_msgs::CostRequest& request, demonstration_layer_msgs::CostResponse & response)
+{
+  MacroCell* macrocell = nullptr;
+  int macrocell_x = request.cell_x / macro_cell_size_;
+  int macrocell_y = request.cell_y / macro_cell_size_;
+
+  macroCellExists(macrocell_x, macrocell_y, &macrocell);
+  if (macrocell != nullptr)
+  {
+    // no demos here yet, so we need to initialize the new macrocell first
+    macrocell = new MacroCell(macrocell_x, macrocell_y, macro_cell_size_);
+    pair_t pair = pair_t(key_t(macrocell_x, macrocell_y), macrocell);
+    macrocell_map_.insert(pair);
+    response.exists = true;
+    // we only care about *change* in cost, so use 0 for underlying map cost
+    response.cost = macrocell->rawCostGivenFeatures(0, request.input);
+  }
+  else
+  {
+    response.exists = false;
+  }
 }
 
 bool DemonstrationLayer::clearCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response)

@@ -1,0 +1,6 @@
+uint8 cell_x
+uint8 cell_y
+recovery_supervisor_msgs/PosTimeGoalFeature input
+---
+uint8 cost
+bool exists
