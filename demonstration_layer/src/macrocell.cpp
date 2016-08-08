@@ -4,7 +4,7 @@
 
 namespace demonstration_layer
 {
-double MacroCell::learning_rate_ = 1;
+double MacroCell::learning_rate_;
 
 // TODO: Consider passing in all the features
 // this whole class/message thing in general is still super shitty.
@@ -12,9 +12,9 @@ MacroCell::MacroCell(unsigned int x, unsigned int y, unsigned int size)
   : x_(x)
   , y_(y)
   , size_(size)
-  , xytheta_feature_(Feature(std::vector<float>{0.1, 0.1, M_PI / 8}))  // meters,meters,radians in global frame
-  , stamp_feature_(Feature(1))                                          // hours
-  , goal_feature_(Feature(1))                                           // goal number
+  , xytheta_feature_(Feature(std::vector<float>{0.4, 0.4, M_PI / 3}))  // meters,meters,radians in global frame
+  , stamp_feature_(Feature(1)) // hours
+  , goal_feature_(Feature(1)) // goal number
 {
 }
 
