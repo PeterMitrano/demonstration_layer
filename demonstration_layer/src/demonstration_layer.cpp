@@ -1,6 +1,6 @@
 #include <demonstration_layer/demonstration_layer.h>
 #include <demonstration_layer/line_iterator.h>
-#include <demonstration_layer_msgs/MacroCellWeight.h>
+#include <demonstration_layer_msgs/MacroCellCost.h>
 #include <pluginlib/class_list_macros.h>
 
 #include <algorithm>
@@ -61,7 +61,7 @@ void DemonstrationLayer::onInitialize()
   cb = boost::bind(&DemonstrationLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
 
-  weights_pub_ = private_nh.advertise<demonstration_layer_msgs::Weights>("weights", 10, true);
+  costs_pub_ = private_nh.advertise<demonstration_layer_msgs::Costs>("costs", 10, true);
 
   demo_sub_ = nh.subscribe("demo", 10, &DemonstrationLayer::demoCallback, this);
   state_feature_sub_ = private_nh.subscribe("state_feature", 10, &DemonstrationLayer::stateFeatureCallback, this);
@@ -120,18 +120,15 @@ bool DemonstrationLayer::costCallback(demonstration_layer_msgs::CostRequest& req
   macroCellExists(macrocell_x, macrocell_y, &macrocell);
   if (macrocell != nullptr)
   {
-    // no demos here yet, so we need to initialize the new macrocell first
-    macrocell = new MacroCell(macrocell_x, macrocell_y, macro_cell_size_);
-    pair_t pair = pair_t(key_t(macrocell_x, macrocell_y), macrocell);
-    macrocell_map_.insert(pair);
-    response.exists = true;
-    // we only care about *change* in cost, so use 0 for underlying map cost
-    response.cost = macrocell->rawCostGivenFeatures(0, request.input);
+    response = macrocell->costResponse(request);
   }
   else
   {
     response.exists = false;
+    response.cost = 0;
   }
+
+  return true;
 }
 
 bool DemonstrationLayer::clearCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response)
@@ -182,27 +179,27 @@ void DemonstrationLayer::macroCellExists(int x, int y, MacroCell** output)
   }
 }
 
-demonstration_layer_msgs::Weights DemonstrationLayer::buildWeightsMsg(std::map<key_t, MacroCell*> macrocell_map_)
+demonstration_layer_msgs::Costs DemonstrationLayer::buildCostsMsg(std::map<key_t, MacroCell*> macrocell_map_)
 {
-  demonstration_layer_msgs::Weights msg;
+  demonstration_layer_msgs::Costs msg;
   for (const auto pair : macrocell_map_)
   {
     const auto macrocell = pair.second;
-    demonstration_layer_msgs::MacroCellWeight cell;
+    demonstration_layer_msgs::MacroCellCost cell;
     cell.x = macrocell->getX();
     cell.y = macrocell->getY();
     cell.size = macrocell->getSize();
-    cell.weights = macrocell->weightsMsg();
+    cell.costs = macrocell->costsMsg();
     msg.cells.push_back(cell);
   }
   return msg;
 }
 
-void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
+void DemonstrationLayer::updateCellCosts(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
                                            recovery_supervisor_msgs::PosTimeGoalFeature feature_vector, bool increase)
 {
   // iterate over cells in the odom path that aren't in demo path.
-  // we want to increase the weights by some fraction LEARNING_RATE_ of their inputs
+  // we want to increase the costs by some fraction LEARNING_RATE_ of their inputs
   geometry_msgs::PoseStamped prev_pose;
   geometry_msgs::PoseStamped pose;
   for (size_t i = 1; i < path.poses.size(); i++)
@@ -231,7 +228,7 @@ void DemonstrationLayer::updateCellWeights(nav_msgs::Path path, costmap_2d::Cost
         macrocell_map_.insert(pair);
       }
 
-      macrocell->updateWeights(increase, underlying_map_cost, feature_vector);
+      macrocell->updateCosts(increase, underlying_map_cost, feature_vector);
       line.advance();
     }
   }
@@ -249,7 +246,7 @@ void DemonstrationLayer::renormalizeLearnedCosts(int min_i, int max_i, int min_j
       int cost = master_grid.getCost(i, j);
 
       // if the cell is part of a macrocell, calculate its cost based on the
-      // features & weights. Also make sure we're basing this off recent data.
+      // features & costs. Also make sure we're basing this off recent data.
       int mx = i / macro_cell_size_;
       int my = j / macro_cell_size_;
       MacroCell* macrocell = nullptr;
@@ -276,16 +273,16 @@ void DemonstrationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min
     return;
 
   update_mutex_.lock();
-  // first handle updating all the weights
+  // first handle updating all the costs
   if (new_demonstration_)
   {
     new_demonstration_ = false;
 
     for (recovery_supervisor_msgs::PosTimeGoalFeature feature_vector : latest_demo_.feature_values)
     {
-      updateCellWeights(latest_demo_.odom_path, master_grid, feature_vector, true);
-      updateCellWeights(latest_demo_.demo_path, master_grid, feature_vector, false);
-      weights_pub_.publish(DemonstrationLayer::buildWeightsMsg(macrocell_map_));
+      updateCellCosts(latest_demo_.odom_path, master_grid, feature_vector, true);
+      updateCellCosts(latest_demo_.demo_path, master_grid, feature_vector, false);
+      costs_pub_.publish(DemonstrationLayer::buildCostsMsg(macrocell_map_));
     }
   }
 

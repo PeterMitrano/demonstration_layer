@@ -8,10 +8,10 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 add_message_files(FILES
-  BucketWeight.msg
-  FeatureWeight.msg
-  MacroCellWeight.msg
-  Weights.msg
+  BucketCost.msg
+  FeatureCost.msg
+  MacroCellCost.msg
+  Costs.msg
 )
 
 add_service_files(FILES

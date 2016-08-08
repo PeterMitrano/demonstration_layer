@@ -7,7 +7,7 @@
 #include <costmap_2d/layered_costmap.h>
 #include <demonstration_layer/DemonstrationLayerConfig.h>
 #include <demonstration_layer/demo_pose_stamped.h>
-#include <demonstration_layer_msgs/Weights.h>
+#include <demonstration_layer_msgs/Costs.h>
 #include <demonstration_layer_msgs/Cost.h>
 #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -69,7 +69,7 @@ private:
   dynamic_reconfigure::Server<DemonstrationLayerConfig>* dsrv_;
 
   ros::Duration feature_timeout_;
-  ros::Publisher weights_pub_;
+  ros::Publisher costs_pub_;
   ros::ServiceServer clear_service_;
   ros::ServiceServer cost_service_;
   ros::Subscriber demo_sub_;
@@ -89,7 +89,7 @@ private:
   std::map<key_t, MacroCell*> macrocell_map_;
 
   // static so we can use it in tests without instantiating a DemonstrationLayer
-  static demonstration_layer_msgs::Weights buildWeightsMsg(std::map<key_t, MacroCell*> macrocell_map_);
+  static demonstration_layer_msgs::Costs buildCostsMsg(std::map<key_t, MacroCell*> macrocell_map_);
 
   bool costCallback(demonstration_layer_msgs::CostRequest& request, demonstration_layer_msgs::CostResponse & response);
   bool clearCallback(std_srvs::EmptyRequest& request, std_srvs::EmptyResponse& response);
@@ -99,10 +99,10 @@ private:
   void renormalizeLearnedCosts(int min_i, int max_i, int min_j, int max_j, costmap_2d::Costmap2D& master_grid);
   void stateFeatureCallback(const recovery_supervisor_msgs::PosTimeGoalFeature& msg);
 
-  /** @brief updates the weights for all the macrocells along a path, given a set of feature values */
-  void updateCellWeights(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
+  /** @brief updates the costs for all the macrocells along a path, given a set of feature values */
+  void updateCellCosts(nav_msgs::Path path, costmap_2d::Costmap2D& master_grid,
                          recovery_supervisor_msgs::PosTimeGoalFeature feature_vector, bool increase);
 
-  FRIEND_TEST(WeightsMsgTest, WeightsMsgTest);
+  FRIEND_TEST(CostsMsgTest, CostsMsgTest);
 };
 }

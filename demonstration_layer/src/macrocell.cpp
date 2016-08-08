@@ -12,33 +12,46 @@ MacroCell::MacroCell(unsigned int x, unsigned int y, unsigned int size)
   : x_(x)
   , y_(y)
   , size_(size)
-  , xytheta_feature_(Feature(std::vector<double>{0.1, 0.1, M_PI / 2}))  // meters,meters,radians in global frame
+  , xytheta_feature_(Feature(std::vector<float>{0.1, 0.1, M_PI / 8}))  // meters,meters,radians in global frame
   , stamp_feature_(Feature(1))                                          // hours
   , goal_feature_(Feature(1))                                           // goal number
 {
 }
 
-std::vector<demonstration_layer_msgs::FeatureWeight> MacroCell::weightsMsg()
+demonstration_layer_msgs::CostResponse MacroCell::costResponse(demonstration_layer_msgs::CostRequest request)
 {
-  std::vector<demonstration_layer_msgs::FeatureWeight> weights;
+  demonstration_layer_msgs::CostResponse response;
+  response.exists = true;
+  // we only care about *change* in cost, so use 0 for underlying map cost
+  response.cost = rawCostGivenFeatures(0, request.input);
+  response.xytheta_cost = xytheta_feature_.costForValue(std::vector<double>{request.input.x, request.input.y, request.input.theta});
+  response.stamp_cost = stamp_feature_.costForValue(request.input.hour);
+  response.goal_cost = goal_feature_.costForValue(request.input.goal);
 
-  demonstration_layer_msgs::FeatureWeight xytheta_msg;
+  return response;
+}
+
+std::vector<demonstration_layer_msgs::FeatureCost> MacroCell::costsMsg()
+{
+  std::vector<demonstration_layer_msgs::FeatureCost> costs;
+
+  demonstration_layer_msgs::FeatureCost xytheta_msg;
   xytheta_msg.name = "xytheta";
   xytheta_msg.buckets = xytheta_feature_.bucketsMsg();
 
-  demonstration_layer_msgs::FeatureWeight stamp_msg;
+  demonstration_layer_msgs::FeatureCost stamp_msg;
   stamp_msg.name = "stamp";
   stamp_msg.buckets = stamp_feature_.bucketsMsg();
 
-  demonstration_layer_msgs::FeatureWeight goal_msg;
+  demonstration_layer_msgs::FeatureCost goal_msg;
   goal_msg.name = "goal";
   goal_msg.buckets = goal_feature_.bucketsMsg();
 
-  weights.push_back(xytheta_msg);
-  weights.push_back(stamp_msg);
-  weights.push_back(goal_msg);
+  costs.push_back(xytheta_msg);
+  costs.push_back(stamp_msg);
+  costs.push_back(goal_msg);
 
-  return weights;
+  return costs;
 }
 
 unsigned int MacroCell::getSize()
@@ -56,7 +69,7 @@ unsigned int MacroCell::getY()
   return y_;
 }
 
-/** @brief computes the linear combination of weights
+/** @brief computes the linear combination of costs
  * and values for features of a given state
  */
 double MacroCell::rawCostGivenFeatures(int underlying_map_cost,
@@ -76,27 +89,27 @@ double MacroCell::rawCostGivenFeatures(int underlying_map_cost, recovery_supervi
   return cost;
 }
 
-void MacroCell::updateWeights(bool increase, int underlying_map_cost,
+void MacroCell::updateCosts(bool increase, int underlying_map_cost,
                               recovery_supervisor_msgs::PosTimeGoalFeature feature_values)
 {
   double delta = increase ? MacroCell::learning_rate_ : -MacroCell::learning_rate_;
-  xytheta_feature_.updateWeightForValue(std::vector<double>{feature_values.x, feature_values.y, feature_values.theta},
+  xytheta_feature_.updateCostForValue(std::vector<double>{feature_values.x, feature_values.y, feature_values.theta},
                                         delta);
-  goal_feature_.updateWeightForValue(feature_values.goal, delta);
-  stamp_feature_.updateWeightForValue(feature_values.hour, delta);
+  goal_feature_.updateCostForValue(feature_values.goal, delta);
+  stamp_feature_.updateCostForValue(feature_values.hour, delta);
 }
 
-void MacroCell::updateWeights(bool increase, int underlying_map_cost,
+void MacroCell::updateCosts(bool increase, int underlying_map_cost,
                               recovery_supervisor_msgs::GoalFeature feature_values)
 {
   double delta = increase ? MacroCell::learning_rate_ : -MacroCell::learning_rate_;
-  goal_feature_.updateWeightForValue(feature_values.goal, delta);
+  goal_feature_.updateCostForValue(feature_values.goal, delta);
 }
 
-void MacroCell::zeroAllWeights()
+void MacroCell::zeroAllCosts()
 {
-  xytheta_feature_.zeroAllWeights();
-  stamp_feature_.zeroAllWeights();
-  goal_feature_.zeroAllWeights();
+  xytheta_feature_.zeroAllCosts();
+  stamp_feature_.zeroAllCosts();
+  goal_feature_.zeroAllCosts();
 }
 }

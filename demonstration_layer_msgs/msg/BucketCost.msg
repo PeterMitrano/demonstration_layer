@@ -1,3 +1,3 @@
 int32[] bucket_indeces
 float32[] feature_value
-float32 weight
+float32 cost
